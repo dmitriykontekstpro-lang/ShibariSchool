@@ -27,14 +27,14 @@ const TextContent: React.FC<TextContentProps> = ({ paragraphs, dictionary, onWor
   }, [dictionary]);
 
   const renderParagraph = (text: string, index: number) => {
-    if (!regex) return <p key={index} className="mb-4 text-lg leading-relaxed text-gray-300">{text}</p>;
+    if (!regex) return <p key={index} className="mb-4 text-base md:text-lg leading-relaxed text-gray-300">{text}</p>;
 
     // Split text using the regex. 
     // Поскольку мы используем захватывающие группы в RegExp (prefix и term), split вернет их в массиве.
     const parts = text.split(regex);
     
     return (
-      <p key={index} className="mb-4 text-lg leading-relaxed text-gray-300">
+      <p key={index} className="mb-4 text-base md:text-lg leading-relaxed text-gray-300">
         {parts.map((part, i) => {
             // Защита от undefined, которые могут возникать при split с группами
             if (part === undefined) return null;
@@ -47,7 +47,7 @@ const TextContent: React.FC<TextContentProps> = ({ paragraphs, dictionary, onWor
                     <span
                         key={i}
                         onClick={() => onWordClick(match.term)}
-                        className="text-red-500 cursor-pointer font-bold hover:text-red-400 transition-colors border-b border-red-500/30 hover:border-red-500"
+                        className="text-red-500 cursor-pointer font-bold hover:text-red-400 transition-colors"
                         title="Нажмите для пояснения"
                     >
                         {part}
@@ -62,7 +62,7 @@ const TextContent: React.FC<TextContentProps> = ({ paragraphs, dictionary, onWor
   };
 
   return (
-    <div className="prose max-w-none p-6 bg-neutral-900 rounded-xl shadow-sm border border-neutral-800 mt-6">
+    <div className="prose max-w-none p-4 md:p-6 bg-neutral-900 rounded-xl shadow-sm border border-neutral-800 mt-6 md:mt-8">
       {paragraphs.map((p, i) => renderParagraph(p, i))}
     </div>
   );

@@ -20,14 +20,14 @@ const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, o
 
   return (
     <div 
-      className={`fixed top-0 right-0 h-full w-80 bg-neutral-900 shadow-2xl z-40 transform transition-transform duration-300 ease-in-out border-l border-neutral-800 ${
+      className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-neutral-900 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out border-l border-neutral-800 ${
         term ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
       {/* Decorative header */}
       <div className="bg-red-800 h-24 p-6 flex flex-col justify-end relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4">
-            <button onClick={onClose} className="text-white/80 hover:text-white transition-colors">
+            <button onClick={onClose} className="text-white/80 hover:text-white transition-colors bg-black/20 p-2 rounded-full backdrop-blur-sm">
                 <X className="w-6 h-6" />
             </button>
         </div>
@@ -38,13 +38,13 @@ const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, o
       </div>
 
       {/* Content */}
-      <div className="p-8">
+      <div className="p-6 sm:p-8 overflow-y-auto h-[calc(100%-6rem)]">
         {term ? (
           <div className="animate-in slide-in-from-right-4 duration-300">
             <span className="inline-block px-3 py-1 bg-red-900/30 text-red-400 text-xs font-bold tracking-wide uppercase rounded-full mb-3">
               Термин
             </span>
-            <h2 className="text-3xl font-extrabold text-white mb-6 break-words">{term}</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-6 break-words">{term}</h2>
             
             <span className="inline-block px-3 py-1 bg-neutral-800 text-neutral-400 text-xs font-bold tracking-wide uppercase rounded-full mb-3">
               Определение

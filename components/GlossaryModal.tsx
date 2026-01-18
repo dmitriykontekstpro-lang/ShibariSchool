@@ -37,7 +37,7 @@ const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictiona
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden">
       {/* Header with Close Button */}
-      <div className="flex justify-end p-6 md:p-8 shrink-0">
+      <div className="flex justify-end p-4 md:p-8 shrink-0">
         <button 
           onClick={onClose}
           className="group flex items-center justify-center w-10 h-10 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:border-red-600 hover:bg-red-900/20 transition-all duration-300"
@@ -47,10 +47,10 @@ const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictiona
       </div>
 
       {/* Content Container */}
-      <div className="flex-1 overflow-y-auto px-6 md:px-20 pb-20 scroll-smooth">
+      <div className="flex-1 overflow-y-auto px-4 md:px-20 pb-20 scroll-smooth">
         <div className="max-w-5xl mx-auto">
           
-          <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-16 tracking-tight">
+          <h2 className="text-3xl md:text-5xl font-bold text-center text-white mb-10 md:mb-16 tracking-tight">
             Словарь терминов
           </h2>
 
@@ -58,14 +58,14 @@ const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictiona
             <p className="text-center text-neutral-500 text-lg">Словарь пуст.</p>
           ) : (
             sortedKeys.map((letter) => (
-              <div key={letter} className="mb-16">
+              <div key={letter} className="mb-12 md:mb-16">
                 {/* Letter Header */}
-                <div className="flex items-center justify-center mb-10 relative">
+                <div className="flex items-center justify-center mb-8 md:mb-10 relative">
                     <div className="absolute inset-0 flex items-center" aria-hidden="true">
                         <div className="w-full border-t border-neutral-800"></div>
                     </div>
-                    <div className="relative bg-black px-8">
-                        <span className="text-4xl md:text-5xl font-light text-white">{letter}</span>
+                    <div className="relative bg-black px-6 md:px-8">
+                        <span className="text-3xl md:text-5xl font-light text-white">{letter}</span>
                     </div>
                 </div>
 
@@ -82,7 +82,7 @@ const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictiona
                       
                       {/* Definition Column */}
                       <div className="md:w-2/3">
-                        <p className="text-neutral-300 text-lg leading-relaxed font-light">
+                        <p className="text-neutral-300 text-base md:text-lg leading-relaxed font-light">
                           {entry.definition}
                         </p>
                       </div>
