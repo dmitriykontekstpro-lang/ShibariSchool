@@ -2,6 +2,8 @@
 export interface DictionaryEntry {
   term: string;
   definition: string;
+  term_en?: string;
+  definition_en?: string;
 }
 
 export type ArticleBlockType = 
@@ -30,16 +32,21 @@ export interface ArticleBlock {
 export interface Article {
   id: number;
   title: string;
+  title_en?: string;
   url: string; // Ссылка на статью (внешняя или внутренняя)
   description?: string;
+  description_en?: string;
   content?: ArticleBlock[]; // JSON контент из конструктора
 }
 
 export interface Lesson {
   id: number;
   title: string;
+  title_en?: string;
   videoUrl: string;
+  videoUrl_en?: string;
   content: string[]; // Array of paragraphs
+  content_en?: string[];
   relatedArticles?: number[]; // IDs of related articles (max 4)
 }
 
@@ -58,12 +65,36 @@ export interface ProductFAQ {
 export interface Product {
   id: number;
   title: string;
+  title_en?: string;
   color: string;
+  color_en?: string;
   description_short: string;
+  description_short_en?: string;
   description_long: string;
+  description_long_en?: string;
   price?: number;
   images: string[]; // URLs array
   video_url?: string;
+  faq?: ProductFAQ[];
+  created_at?: string;
+  is_course?: boolean; // Helper flag to distinguish in cart
+}
+
+// --- Courses Types ---
+
+export interface Course {
+  id: number;
+  title: string;
+  title_en?: string;
+  author: string;
+  description_short: string;
+  description_short_en?: string;
+  description_long: string;
+  description_long_en?: string;
+  video_url: string;
+  image_url?: string; // Cover image
+  price: number;
+  modules: string[]; // List of module titles
   faq?: ProductFAQ[];
   created_at?: string;
 }
@@ -120,6 +151,10 @@ export interface UserProfile {
   utm_campaign?: string;
   subscription_months?: number;
   
+  // New CRM Fields for Courses
+  has_ordered_course?: boolean;
+  ordered_courses_list?: string[];
+  
   // History
   orders_history?: Order[];
 }
@@ -147,4 +182,9 @@ export interface AppSettings {
   custom_html_body?: string;
   gold_user_threshold_minutes?: number; // Legacy simple threshold
   gold_config?: MetricRule[]; // New flexible config
+  
+  // EmailJS Config
+  emailjs_service_id?: string;
+  emailjs_template_id?: string;
+  emailjs_public_key?: string;
 }

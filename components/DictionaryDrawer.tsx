@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { X, BookOpen } from 'lucide-react';
 import { DictionaryEntry } from '../types';
@@ -6,17 +7,32 @@ interface DictionaryDrawerProps {
   term: string | null;
   dictionary: DictionaryEntry[];
   onClose: () => void;
+  lang?: 'ru' | 'en';
+  t?: any;
 }
 
-const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, onClose }) => {
+const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, onClose, lang = 'ru', t }) => {
   const [definition, setDefinition] = useState<string | null>(null);
 
   useEffect(() => {
     if (term) {
-      const entry = dictionary.find(d => d.term.toLowerCase() === term.toLowerCase());
-      setDefinition(entry ? entry.definition : 'Определение не найдено.');
+      // Try to find by english term OR russian term
+      const entry = dictionary.find(d => 
+        (d.term.toLowerCase() === term.toLowerCase()) || 
+        (d.term_en && d.term_en.toLowerCase() === term.toLowerCase())
+      );
+
+      if (entry) {
+          if (lang === 'en') {
+              setDefinition(entry.definition_en || entry.definition);
+          } else {
+              setDefinition(entry.definition);
+          }
+      } else {
+          setDefinition(lang === 'en' ? 'Definition not found.' : 'Определение не найдено.');
+      }
     }
-  }, [term, dictionary]);
+  }, [term, dictionary, lang]);
 
   return (
     <div 
@@ -33,7 +49,7 @@ const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, o
         </div>
         <BookOpen className="text-white/10 w-32 h-32 absolute -top-8 -left-8 transform rotate-12" />
         <h3 className="text-white font-bold text-xl relative z-10 flex items-center gap-2">
-            <BookOpen className="w-5 h-5" /> Глоссарий
+            <BookOpen className="w-5 h-5" /> {t ? t.dictionary : 'Глоссарий'}
         </h3>
       </div>
 
@@ -42,12 +58,12 @@ const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, o
         {term ? (
           <div className="animate-in slide-in-from-right-4 duration-300">
             <span className="inline-block px-3 py-1 bg-red-900/30 text-red-400 text-xs font-bold tracking-wide uppercase rounded-full mb-3">
-              Термин
+              Term
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-6 break-words">{term}</h2>
             
             <span className="inline-block px-3 py-1 bg-neutral-800 text-neutral-400 text-xs font-bold tracking-wide uppercase rounded-full mb-3">
-              Определение
+              Definition
             </span>
             <p className="text-lg text-gray-300 leading-relaxed font-serif italic border-l-4 border-red-900 pl-4 py-1">
               {definition}
@@ -55,7 +71,7 @@ const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, o
           </div>
         ) : (
             <div className="text-center mt-20 text-neutral-500">
-                <p>Выберите выделенное слово, чтобы увидеть его пояснение.</p>
+                <p>Select a highlighted word to see its definition.</p>
             </div>
         )}
       </div>

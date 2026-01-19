@@ -7,15 +7,22 @@ import BehaviorTracker from '../utils/BehaviorTracker';
 interface AuthOverlayProps {
   onLoginSuccess: () => void;
   onClose?: () => void;
+  t?: any;
 }
 
-const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) => {
+const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose, t }) => {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Check for errors in URL hash (e.g. from email confirmation link)
+  // Fallback for missing translations
+  const _t = t || {
+      login: 'Login', register: 'Register', email: 'Email', password: 'Password',
+      user_name: 'Username', country: 'Country', city: 'City', role: 'Role', experience: 'Experience',
+      next: 'Next', back: 'Back', invalid_credentials: "Invalid login credentials", auth_error: "Auth Error", account_created: "Account created"
+  };
+
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && hash.includes('error_description')) {
@@ -26,7 +33,7 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
         if (errorDesc) {
             let msg = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
             if (errorCode === 'otp_expired') {
-                msg = "Ссылка подтверждения истекла. Попробуйте войти с паролем.";
+                msg = "Expired link.";
             }
             setError(msg);
             window.history.replaceState(null, '', window.location.pathname);
@@ -73,7 +80,11 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
       onLoginSuccess();
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Ошибка входа. Проверьте данные.");
+      if (err.message === 'Invalid login credentials') {
+          setError(_t.invalid_credentials || "Invalid email or password.");
+      } else {
+          setError(err.message || _t.auth_error || "Login error.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -103,9 +114,10 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
       });
 
       if (authError) throw authError;
-      if (!authData.user) throw new Error("Не удалось создать пользователя.");
+      if (!authData.user) throw new Error("Create user failed.");
 
       if (authData.session) {
+          // If session is returned immediately, login success (Email Confirm Off)
           const newProfile: Partial<UserProfile> = {
             id: authData.user.id,
             email: formData.email,
@@ -116,14 +128,17 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
           BehaviorTracker.identify(authData.user.id);
           onLoginSuccess();
       } else {
-          setSuccessMessage("Аккаунт создан! Проверьте почту для подтверждения.");
+          // Email Confirm On - User must verify email
+          setSuccessMessage(_t.account_created || "Account created! Check email.");
           setIsLoginMode(true);
           setStep(1);
+          // Optional: Create profile here if not relying on session triggers, 
+          // but better to let App.tsx fetch/create on first valid login session.
       }
 
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Ошибка регистрации.");
+      setError(err.message || "Registration error.");
     } finally {
       setIsLoading(false);
     }
@@ -131,10 +146,10 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
 
   const renderStep1_Auth = () => (
     <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
-        <h3 className="text-xl font-bold text-white mb-2">Данные для входа</h3>
+        <h3 className="text-xl font-bold text-white mb-2">Auth Data</h3>
         <div className="space-y-2">
             <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                <Mail className="w-3 h-3" /> Почта
+                <Mail className="w-3 h-3" /> {_t.email}
             </label>
             <input 
                 type="email" 
@@ -146,7 +161,7 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
         </div>
         <div className="space-y-2">
             <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                <Lock className="w-3 h-3" /> Пароль
+                <Lock className="w-3 h-3" /> {_t.password}
             </label>
             <input 
                 type="password" 
@@ -159,63 +174,61 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
         <button 
             onClick={() => {
                 if(formData.email && formData.password.length >= 6) setStep(2);
-                else setError("Введите почту и пароль (минимум 6 символов)");
+                else setError("Enter email and password (min 6 chars)");
             }}
             className="w-full bg-neutral-800 hover:bg-neutral-700 text-white py-3 rounded-lg font-bold mt-4 flex items-center justify-center gap-2 transition-colors"
         >
-            Далее <ArrowRight className="w-4 h-4" />
+            {_t.next} <ArrowRight className="w-4 h-4" />
         </button>
     </div>
   );
 
   const renderStep2_Personal = () => (
     <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
-        <h3 className="text-xl font-bold text-white mb-2">О себе</h3>
+        <h3 className="text-xl font-bold text-white mb-2">Personal</h3>
         <div className="space-y-2">
             <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                <User className="w-3 h-3" /> Имя пользователя
+                <User className="w-3 h-3" /> {_t.user_name}
             </label>
             <input 
                 value={formData.fullName}
                 onChange={e => handleInputChange('fullName', e.target.value)}
                 className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:border-red-600 outline-none"
-                placeholder="Как к вам обращаться?"
+                placeholder="Name"
             />
         </div>
         <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
                 <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                    <MapPin className="w-3 h-3" /> Страна
+                    <MapPin className="w-3 h-3" /> {_t.country}
                 </label>
                 <input 
                     value={formData.country}
                     onChange={e => handleInputChange('country', e.target.value)}
                     className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:border-red-600 outline-none"
-                    placeholder="РФ"
                 />
             </div>
             <div className="space-y-2">
                 <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                    <MapPin className="w-3 h-3" /> Город
+                    <MapPin className="w-3 h-3" /> {_t.city}
                 </label>
                 <input 
                     value={formData.city}
                     onChange={e => handleInputChange('city', e.target.value)}
                     className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:border-red-600 outline-none"
-                    placeholder="Москва"
                 />
             </div>
         </div>
         <div className="flex gap-2 mt-4">
-             <button onClick={() => setStep(1)} className="flex-1 py-3 bg-transparent border border-neutral-700 text-neutral-400 rounded-lg hover:text-white">Назад</button>
+             <button onClick={() => setStep(1)} className="flex-1 py-3 bg-transparent border border-neutral-700 text-neutral-400 rounded-lg hover:text-white">{_t.back}</button>
              <button 
                 onClick={() => {
                     if(formData.fullName) setStep(3);
-                    else setError("Представьтесь, пожалуйста");
+                    else setError("Name required");
                 }} 
                 className="flex-[2] bg-neutral-800 hover:bg-neutral-700 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2"
             >
-                Далее <ArrowRight className="w-4 h-4" />
+                {_t.next} <ArrowRight className="w-4 h-4" />
             </button>
         </div>
     </div>
@@ -223,11 +236,11 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
 
   const renderStep3_Shibari = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
-        <h3 className="text-xl font-bold text-white mb-2">Ваш путь в Шибари</h3>
+        <h3 className="text-xl font-bold text-white mb-2">Shibari Path</h3>
         
         <div className="space-y-3">
             <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                <Heart className="w-3 h-3" /> Ваша роль
+                <Heart className="w-3 h-3" /> {_t.role}
             </label>
             <div className="grid grid-cols-2 gap-2">
                 {['rigger', 'model', 'switch', 'unknown'].map((role) => (
@@ -240,10 +253,7 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
                             : 'bg-neutral-800 border-neutral-800 text-neutral-400 hover:bg-neutral-700'
                         }`}
                     >
-                        {role === 'rigger' && 'Риггер'}
-                        {role === 'model' && 'Модель'}
-                        {role === 'switch' && 'Все вместе'}
-                        {role === 'unknown' && 'Не знаю'}
+                        {role}
                     </button>
                 ))}
             </div>
@@ -251,7 +261,7 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
 
         <div className="space-y-3">
             <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                <Star className="w-3 h-3" /> Уровень опыта
+                <Star className="w-3 h-3" /> {_t.experience}
             </label>
             <div className="grid grid-cols-2 gap-2">
                 {['newbie', 'beginner', 'experienced', 'expert'].map((lvl) => (
@@ -264,22 +274,19 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
                             : 'bg-neutral-800 border-neutral-800 text-neutral-400 hover:bg-neutral-700'
                         }`}
                     >
-                        {lvl === 'newbie' && 'Новичок (0)'}
-                        {lvl === 'beginner' && 'Начинающий'}
-                        {lvl === 'experienced' && 'Опытный'}
-                        {lvl === 'expert' && 'Эксперт'}
+                        {lvl}
                     </button>
                 ))}
             </div>
         </div>
 
         <div className="flex gap-2 mt-6">
-             <button onClick={() => setStep(2)} className="flex-1 py-3 bg-transparent border border-neutral-700 text-neutral-400 rounded-lg hover:text-white">Назад</button>
+             <button onClick={() => setStep(2)} className="flex-1 py-3 bg-transparent border border-neutral-700 text-neutral-400 rounded-lg hover:text-white">{_t.back}</button>
              <button 
                 onClick={handleRegister} 
                 className="flex-[2] bg-red-700 hover:bg-red-600 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-900/20"
             >
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Зарегистрироваться'}
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : _t.register}
             </button>
         </div>
     </div>
@@ -293,12 +300,10 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
             <div className="p-6 pb-2 flex justify-between items-start">
                  <div>
                     <h2 className="text-2xl font-bold text-white mb-1">
-                        {isLoginMode ? 'Вход' : 'Регистрация'}
+                        {isLoginMode ? _t.login : _t.register}
                     </h2>
                     <p className="text-sm text-neutral-400">
-                        {isLoginMode 
-                            ? 'Рады видеть вас снова.' 
-                            : 'Создайте аккаунт для полного доступа.'}
+                        {isLoginMode ? 'Welcome back.' : 'Create account.'}
                     </p>
                  </div>
                  {onClose && (
@@ -311,7 +316,7 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
             {/* Scrollable Content */}
             <div className="p-6 pt-4 overflow-y-auto">
                 {error && (
-                    <div className="mb-4 bg-red-900/20 border border-red-900/50 p-3 rounded-lg flex items-start gap-3">
+                    <div className="mb-4 bg-red-900/20 border border-red-900/50 p-3 rounded-lg flex items-start gap-3 animate-in shake">
                         <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                         <p className="text-sm text-red-200">{error}</p>
                     </div>
@@ -328,20 +333,20 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
                     <form onSubmit={handleLogin} className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
                         <div className="space-y-2">
                             <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                                <Mail className="w-3 h-3" /> Почта
+                                <Mail className="w-3 h-3" /> {_t.email}
                             </label>
                             <input 
                                 type="email" 
                                 value={formData.email}
                                 onChange={e => handleInputChange('email', e.target.value)}
                                 className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-red-600 outline-none transition-colors"
-                                placeholder="example@mail.com"
+                                placeholder="email@example.com"
                             />
                         </div>
                         <div className="space-y-2">
                              <div className="flex justify-between">
                                 <label className="text-xs text-neutral-500 uppercase font-bold flex items-center gap-2">
-                                    <Lock className="w-3 h-3" /> Пароль
+                                    <Lock className="w-3 h-3" /> {_t.password}
                                 </label>
                              </div>
                             <input 
@@ -357,7 +362,7 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
                             disabled={isLoading}
                             className="w-full bg-red-700 hover:bg-red-600 text-white py-3 rounded-lg font-bold mt-4 flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-900/20"
                         >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Войти'}
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : _t.login}
                         </button>
                     </form>
                 ) : (
@@ -370,12 +375,12 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLoginSuccess, onClose }) =>
 
                 <div className="mt-6 pt-6 border-t border-neutral-800 text-center">
                     <p className="text-sm text-neutral-500">
-                        {isLoginMode ? 'Еще нет аккаунта?' : 'Уже есть аккаунт?'}
+                        {isLoginMode ? 'No account?' : 'Have account?'}
                         <button 
-                            onClick={() => { setIsLoginMode(!isLoginMode); setStep(1); setError(null); }}
+                            onClick={() => { setIsLoginMode(!isLoginMode); setStep(1); setError(null); setSuccessMessage(null); }}
                             className="ml-2 text-white font-bold hover:text-red-500 transition-colors"
                         >
-                            {isLoginMode ? 'Зарегистрироваться' : 'Войти'}
+                            {isLoginMode ? _t.register : _t.login}
                         </button>
                     </p>
                 </div>

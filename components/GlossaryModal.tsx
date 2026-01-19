@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { DictionaryEntry } from '../types';
@@ -6,21 +7,29 @@ interface GlossaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   dictionary: DictionaryEntry[];
+  lang?: 'ru' | 'en';
+  t?: any;
 }
 
-const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictionary }) => {
+const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictionary, lang = 'ru', t }) => {
   if (!isOpen) return null;
 
   // Группируем слова по первой букве
   const groupedDictionary = useMemo(() => {
     const groups: { [key: string]: DictionaryEntry[] } = {};
     
-    // Сортируем словарь по алфавиту
-    const sortedDict = [...dictionary].sort((a, b) => a.term.localeCompare(b.term));
+    // Sort based on current language
+    const sortedDict = [...dictionary].sort((a, b) => {
+        const termA = (lang === 'en' ? (a.term_en || a.term) : a.term);
+        const termB = (lang === 'en' ? (b.term_en || b.term) : b.term);
+        return termA.localeCompare(termB);
+    });
 
     sortedDict.forEach(entry => {
-      const firstLetter = entry.term.charAt(0).toUpperCase();
-      // Проверка: если символ не буква (например, цифра), можно сгруппировать в '#' или отдельную категорию
+      const term = (lang === 'en' ? (entry.term_en || entry.term) : entry.term);
+      const firstLetter = term.charAt(0).toUpperCase();
+      
+      // Check if letter
       const key = firstLetter.match(/[a-zа-яё]/i) ? firstLetter : '#';
       
       if (!groups[key]) {
@@ -30,7 +39,7 @@ const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictiona
     });
 
     return groups;
-  }, [dictionary]);
+  }, [dictionary, lang]);
 
   const sortedKeys = Object.keys(groupedDictionary).sort();
 
@@ -51,11 +60,11 @@ const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictiona
         <div className="max-w-5xl mx-auto">
           
           <h2 className="text-3xl md:text-5xl font-bold text-center text-white mb-10 md:mb-16 tracking-tight">
-            Словарь терминов
+            {t ? t.dictionary : 'Словарь'}
           </h2>
 
           {dictionary.length === 0 ? (
-            <p className="text-center text-neutral-500 text-lg">Словарь пуст.</p>
+            <p className="text-center text-neutral-500 text-lg">Empty.</p>
           ) : (
             sortedKeys.map((letter) => (
               <div key={letter} className="mb-12 md:mb-16">
@@ -71,23 +80,27 @@ const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictiona
 
                 {/* Terms List */}
                 <div className="space-y-8">
-                  {groupedDictionary[letter].map((entry, index) => (
-                    <div key={index} className="flex flex-col md:flex-row md:gap-12 gap-2 group">
-                      {/* Term Column */}
-                      <div className="md:w-1/3 md:text-right shrink-0">
-                        <h3 className="text-xl md:text-2xl font-medium text-red-600 transition-colors">
-                          {entry.term}
-                        </h3>
-                      </div>
-                      
-                      {/* Definition Column */}
-                      <div className="md:w-2/3">
-                        <p className="text-neutral-300 text-base md:text-lg leading-relaxed font-light">
-                          {entry.definition}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                  {groupedDictionary[letter].map((entry, index) => {
+                      const displayTerm = lang === 'en' ? (entry.term_en || entry.term) : entry.term;
+                      const displayDef = lang === 'en' ? (entry.definition_en || entry.definition) : entry.definition;
+                      return (
+                        <div key={index} className="flex flex-col md:flex-row md:gap-12 gap-2 group">
+                        {/* Term Column */}
+                        <div className="md:w-1/3 md:text-right shrink-0">
+                            <h3 className="text-xl md:text-2xl font-medium text-red-600 transition-colors">
+                            {displayTerm}
+                            </h3>
+                        </div>
+                        
+                        {/* Definition Column */}
+                        <div className="md:w-2/3">
+                            <p className="text-neutral-300 text-base md:text-lg leading-relaxed font-light">
+                            {displayDef}
+                            </p>
+                        </div>
+                        </div>
+                      );
+                  })}
                 </div>
               </div>
             ))

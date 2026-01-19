@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Save, FileText, Video, Type, RefreshCw, Link, PenTool, Users, CheckCircle, XCircle, ChevronDown, Loader2, Check, BarChart, Code, Activity, Eye, Monitor, Clock, ShoppingCart, Globe, Filter, List, Database, ShoppingBag, ClipboardList, Package, Calendar, DollarSign, ArrowLeft } from 'lucide-react';
-import { DictionaryEntry, Lesson, Article, UserProfile, AppSettings, MetricRule, MetricType, Product } from '../types';
+import { X, Plus, Trash2, Save, Video, Type, RefreshCw, Link, PenTool, Users, CheckCircle, XCircle, ChevronDown, Loader2, BarChart, Code, Activity, Eye, Monitor, ShoppingBag, ClipboardList, Package, Calendar, DollarSign, ArrowLeft, GraduationCap, Mail, AlertTriangle, Copy, List, Globe, ShoppingCart } from 'lucide-react';
+import { DictionaryEntry, Lesson, Article, UserProfile, AppSettings, MetricRule, MetricType, Product, Course } from '../types';
 import ArticleConstructor from './ArticleConstructor';
 import MarketplaceManager from './MarketplaceManager';
+import CourseManager from './CourseManager';
 import { supabase } from '../supabaseClient';
 import BehaviorTracker, { AdvancedSessionMetrics } from '../utils/BehaviorTracker';
+import { DEFAULT_EMAILJS_PUBLIC_KEY, DEFAULT_EMAILJS_SERVICE_ID, DEFAULT_EMAILJS_TEMPLATE_ID } from '../constants';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -22,7 +24,6 @@ interface SettingsModalProps {
 }
 
 // --- CRM Constants ---
-
 type ColumnKey = 
   | 'full_name'
   | 'shibari_role'
@@ -30,6 +31,8 @@ type ColumnKey =
   | 'country'
   | 'city'
   | 'is_subscription_active'
+  | 'has_ordered_course'
+  | 'ordered_courses_list'
   | 'rope_purchases_count'
   | 'rope_purchases_total_amount'
   | 'total_time_on_site_minutes'
@@ -47,15 +50,15 @@ interface ColumnConfig {
 
 const DEFAULT_COLUMN_KEYS: ColumnKey[] = [
     'full_name', 
-    'shibari_role', 
     'orders_history_btn',
-    'is_subscription_active', 
+    'has_ordered_course',
+    'ordered_courses_list',
     'rope_purchases_total_amount', 
     'total_revenue_usd', 
-    'utm_source',
     'subscription_months'
 ];
 
+// ... (Metric Definitions)
 interface MetricDefinition {
     key: string;
     label: string;
@@ -65,39 +68,16 @@ interface MetricDefinition {
 }
 
 const METRIC_DEFINITIONS: MetricDefinition[] = [
-    // Behavior
     { key: 'page_views', label: 'Просмотры страниц', type: 'range', path: 'behavior.total_pageviews', category: 'Behavior' },
     { key: 'clicks', label: 'Количество кликов', type: 'range', path: 'behavior.click_count', category: 'Behavior' },
     { key: 'scroll_depth', label: 'Глубина скролла (%)', type: 'threshold', path: 'behavior.max_scroll_depth', category: 'Behavior' },
     { key: 'avg_time_page', label: 'Ср. время на стр. (сек)', type: 'time', path: 'behavior.avg_time_per_page', category: 'Behavior' },
-    { key: 'search_used', label: 'Использовал поиск', type: 'boolean', path: 'behavior.site_search_usage', category: 'Behavior' },
-    { key: 'filter_used', label: 'Использовал фильтры', type: 'boolean', path: 'behavior.filter_usage', category: 'Behavior' },
-
-    // Context
-    { key: 'device', label: 'Устройство', type: 'select', path: 'context.device_category', category: 'Context' },
-    { key: 'os', label: 'ОС', type: 'select', path: 'context.os_type', category: 'Context' },
-    { key: 'browser_lang', label: 'Язык браузера', type: 'select', path: 'context.browser_language', category: 'Context' },
-    { key: 'is_wifi', label: 'Wi-Fi', type: 'boolean', path: 'context.is_wifi', category: 'Context' },
-    { key: 'resolution', label: 'Разрешение экрана', type: 'select', path: 'context.screen_resolution', category: 'Context' },
-
-    // Ecommerce / Engagement
-    { key: 'products_viewed', label: 'Просмотрено уроков/товаров', type: 'range', path: 'ecommerce.viewed_product_count', category: 'Ecommerce' },
-    { key: 'cart_adds', label: 'Добавлений в корзину', type: 'range', path: 'ecommerce.cart_adds_count', category: 'Ecommerce' },
-    { key: 'cart_removes', label: 'Удалений из корзины', type: 'range', path: 'ecommerce.cart_removes_count', category: 'Ecommerce' },
-    { key: 'avg_price', label: 'Ср. цена интереса', type: 'range', path: 'ecommerce.avg_price_viewed', category: 'Ecommerce' },
-    { key: 'reviews_read', label: 'Читал отзывы', type: 'boolean', path: 'ecommerce.reviews_read', category: 'Ecommerce' },
-
-    // Temporal / Time
     { key: 'active_time', label: 'Активное время (сек)', type: 'time', path: '_internal.active_seconds', category: 'Time' },
     { key: 'total_time', label: 'Общее время сессии (сек)', type: 'time', path: '_internal.total_seconds', category: 'Time' },
-    { key: 'hour', label: 'Час суток (0-23)', type: 'range', path: 'temporal.hour_of_day', category: 'Time' },
-    { key: 'day_week', label: 'День недели (0=Вс)', type: 'range', path: 'temporal.day_of_week', category: 'Time' },
-    { key: 'work_hours', label: 'Рабочее время', type: 'boolean', path: 'temporal.is_work_hours', category: 'Time' },
-    { key: 'return_time', label: 'Часов с прошлого визита', type: 'range', path: 'temporal.time_since_last_visit_hours', category: 'Time' },
-
-    // Source
-    { key: 'source', label: 'Источник трафика', type: 'select', path: 'source.traffic_source', category: 'Source' },
-    { key: 'referrer', label: 'Реферрер (Домен)', type: 'select', path: 'source.referrer_domain', category: 'Source' },
+    { key: 'device', label: 'Устройство', type: 'select', path: 'context.device_category', category: 'Context' },
+    { key: 'products_viewed', label: 'Просмотрено товаров', type: 'range', path: 'ecommerce.viewed_product_count', category: 'Ecommerce' },
+    { key: 'cart_adds', label: 'Добавлений в корзину', type: 'range', path: 'ecommerce.cart_adds_count', category: 'Ecommerce' },
+    { key: 'source', label: 'Источник', type: 'select', path: 'source.traffic_source', category: 'Source' },
 ];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
@@ -105,7 +85,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateLesson, onAddLesson, onRemoveLesson, 
   onAddWord, onRemoveWord, onResetToDefaults, onArticlesRefresh
 }) => {
-  const [activeTab, setActiveTab] = useState<'video' | 'dict' | 'constructor' | 'users' | 'analytics' | 'behavior' | 'marketplace'>('video');
+  const [activeTab, setActiveTab] = useState<'video' | 'dict' | 'constructor' | 'users' | 'analytics' | 'behavior' | 'marketplace' | 'courses'>('video');
   const [newTerm, setNewTerm] = useState('');
   const [newDef, setNewDef] = useState('');
 
@@ -122,18 +102,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       yandex_id: '', 
       custom_html_body: '', 
       gold_user_threshold_minutes: 5,
-      gold_config: [] 
+      gold_config: [],
+      emailjs_service_id: DEFAULT_EMAILJS_SERVICE_ID,
+      emailjs_template_id: DEFAULT_EMAILJS_TEMPLATE_ID,
+      emailjs_public_key: DEFAULT_EMAILJS_PUBLIC_KEY
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [selectOptions, setSelectOptions] = useState<Record<string, string[]>>({});
   
   // Realtime Debugger State
   const [realtimeMetrics, setRealtimeMetrics] = useState<AdvancedSessionMetrics | null>(null);
 
-  // Marketplace State
+  // Marketplace & Courses Local State (for editing)
   const [products, setProducts] = useState<Product[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
 
-  // Columns Configuration (Moved inside to access state handlers)
+  // Columns Configuration (Memoized)
   const allColumns: ColumnConfig[] = useMemo(() => [
     { 
         key: 'full_name', 
@@ -181,6 +166,26 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       render: (u) => u.is_subscription_active 
           ? <div className="flex justify-center"><CheckCircle className="w-5 h-5 text-red-600" /></div>
           : <div className="flex justify-center"><CheckCircle className="w-5 h-5 text-neutral-700" /></div>
+    },
+    { 
+        key: 'has_ordered_course', 
+        label: 'Заказ курса', 
+        width: 'w-24 text-center',
+        render: (u) => u.has_ordered_course 
+            ? <div className="flex justify-center"><CheckCircle className="w-5 h-5 text-green-500" /></div>
+            : <div className="flex justify-center"><XCircle className="w-5 h-5 text-neutral-700" /></div>
+    },
+    {
+        key: 'ordered_courses_list',
+        label: 'Список курсов',
+        width: 'w-48',
+        render: (u) => (
+             <div className="text-[10px] text-neutral-400 max-h-12 overflow-y-auto scrollbar-hide">
+                 {(u.ordered_courses_list && u.ordered_courses_list.length > 0) 
+                    ? u.ordered_courses_list.join(', ') 
+                    : '-'}
+             </div>
+        )
     },
     { 
         key: 'rope_purchases_count', 
@@ -239,18 +244,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             if (activeTab === 'behavior') fetchSelectOptions();
         }
         if (activeTab === 'marketplace') fetchProducts();
+        if (activeTab === 'courses') fetchCourses();
     }
   }, [isOpen, activeTab]);
 
-  // Poll metrics for debugging
   useEffect(() => {
     let interval: any;
     if (isOpen && activeTab === 'behavior') {
         const updateMetrics = () => {
             const m = BehaviorTracker.getMetrics();
-            setRealtimeMetrics({ ...m }); // Clone to trigger re-render
+            setRealtimeMetrics({ ...m }); 
         };
-        updateMetrics(); // Initial
+        updateMetrics(); 
         interval = setInterval(updateMetrics, 1000);
     }
     return () => clearInterval(interval);
@@ -276,6 +281,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const fetchSettings = async () => {
       if (!supabase) return;
+      setSettingsError(null);
       try {
           const { data, error } = await supabase
              .from('app_settings')
@@ -283,38 +289,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
              .limit(1)
              .maybeSingle();
 
-          if (!error && data) {
+          if (error) throw error;
+
+          if (data) {
               setAppSettings({
                   ...data,
+                  emailjs_public_key: data.emailjs_public_key || DEFAULT_EMAILJS_PUBLIC_KEY,
+                  emailjs_service_id: data.emailjs_service_id || DEFAULT_EMAILJS_SERVICE_ID,
+                  emailjs_template_id: data.emailjs_template_id || DEFAULT_EMAILJS_TEMPLATE_ID,
                   gold_config: Array.isArray(data.gold_config) ? data.gold_config : []
               });
           }
-      } catch (e) {
+      } catch (e: any) {
           console.error("Settings fetch error:", e);
+          if (e.code === '42P01' || e.message?.includes('does not exist')) {
+              setSettingsError('TABLE_MISSING');
+          } else {
+              setSettingsError(e.message);
+          }
       }
   };
 
   const fetchProducts = async () => {
       if (!supabase) return;
       try {
-          const { data, error } = await supabase.from('market_shibari').select('*').order('created_at', { ascending: false });
+          const { data } = await supabase.from('market_shibari').select('*').order('created_at', { ascending: false });
           if (data) {
-             // Force temporary image replacement for admin view as well
              const tempImage = "https://ae-pic-a1.aliexpress-media.com/kf/S495d509b0d07444e90c460039d83ac94b.jpg";
-             const fixedProducts = data.map((p: any) => ({
-                 ...p,
-                 images: p.images && p.images.length > 0 
-                     ? p.images.map(() => tempImage) 
-                     : [tempImage]
-             }));
-             setProducts(fixedProducts);
+             setProducts(data.map((p: any) => ({ ...p, images: p.images?.length ? p.images : [tempImage] })));
           }
       } catch (e) { console.error(e); }
   };
 
+  const fetchCourses = async () => {
+    if (!supabase) return;
+    try {
+        const { data } = await supabase.from('kurs_market_shibari').select('*').order('created_at', { ascending: false });
+        if (data) setCourses(data);
+    } catch (e) { console.error(e); }
+  };
+
   const fetchSelectOptions = async () => {
       if (!supabase) return;
-      // Fetch some recent logs to populate dropdowns
       try {
           const { data } = await supabase
             .from('user_behavior_logs_shibari')
@@ -323,14 +339,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             .limit(50);
           
           if (!data) return;
-
           const options: Record<string, Set<string>> = {
               'context.device_category': new Set(['mobile', 'desktop', 'tablet']),
               'context.os_type': new Set(['Windows', 'macOS', 'iOS', 'Android', 'Linux']),
               'source.traffic_source': new Set(['direct', 'organic_search', 'social', 'referral']),
           };
-
-          // Parse logs for extra values
           data.forEach((row: any) => {
                try {
                    const ld = row.log_data;
@@ -338,7 +351,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                    if (ld.source?.traffic_source) options['source.traffic_source'].add(ld.source.traffic_source);
                } catch (e) {}
           });
-
           setSelectOptions({
               'context.device_category': Array.from(options['context.device_category']),
               'context.os_type': Array.from(options['context.os_type']),
@@ -355,30 +367,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           const payload = { ...appSettings };
           if (!payload.id) delete payload.id;
           const upsertPayload = { ...payload, id: 1 };
-
-          const { error } = await supabase
-            .from('app_settings')
-            .upsert(upsertPayload);
-
+          const { error } = await supabase.from('app_settings').upsert(upsertPayload);
           if (error) throw error;
-          
-          // Re-init tracker with new settings immediately
           if (appSettings.gold_config) {
               BehaviorTracker.init(null, { goldConfig: appSettings.gold_config });
           }
-          
           alert("Настройки сохранены!");
-
+          setSettingsError(null);
       } catch (e: any) {
-          console.error(e);
-          // (Error handling omitted for brevity - same as previous)
           alert("Ошибка сохранения: " + e.message);
+          if (e.code === '42P01') setSettingsError('TABLE_MISSING');
       } finally {
           setIsSavingSettings(false);
       }
   };
 
-  // --- Rule Management ---
+  const repairSql = `
+create table if not exists public.app_settings (
+  id bigint generated by default as identity primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  gtm_id text,
+  yandex_id text,
+  custom_html_body text,
+  gold_user_threshold_minutes numeric default 5,
+  gold_config jsonb default '[]'::jsonb,
+  emailjs_service_id text,
+  emailjs_template_id text,
+  emailjs_public_key text
+);
+alter table public.app_settings enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename = 'app_settings' and policyname = 'Allow all operations') then
+    create policy "Allow all operations" on public.app_settings for all using (true) with check (true);
+  end if;
+end $$;
+insert into public.app_settings (id, emailjs_public_key, emailjs_service_id, emailjs_template_id)
+values (1, '${DEFAULT_EMAILJS_PUBLIC_KEY}', '${DEFAULT_EMAILJS_SERVICE_ID}', '${DEFAULT_EMAILJS_TEMPLATE_ID}')
+on conflict (id) do update
+set emailjs_public_key = EXCLUDED.emailjs_public_key,
+    emailjs_service_id = EXCLUDED.emailjs_service_id,
+    emailjs_template_id = EXCLUDED.emailjs_template_id
+where app_settings.emailjs_public_key is null;
+  `.trim();
 
   const addRule = (def: MetricDefinition) => {
       const newRule: MetricRule = {
@@ -388,27 +418,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           type: def.type,
           value: def.type === 'boolean' ? 'true' : (def.type === 'time' ? 60 : (def.type === 'select' ? '' : undefined))
       };
-      setAppSettings(prev => ({
-          ...prev,
-          gold_config: [...(prev.gold_config || []), newRule]
-      }));
+      setAppSettings(prev => ({ ...prev, gold_config: [...(prev.gold_config || []), newRule] }));
   };
-
   const removeRule = (id: string) => {
-      setAppSettings(prev => ({
-          ...prev,
-          gold_config: prev.gold_config?.filter(r => r.id !== id) || []
-      }));
+      setAppSettings(prev => ({ ...prev, gold_config: prev.gold_config?.filter(r => r.id !== id) || [] }));
   };
-
   const updateRule = (id: string, field: keyof MetricRule, val: any) => {
-      setAppSettings(prev => ({
-          ...prev,
-          gold_config: prev.gold_config?.map(r => r.id === id ? { ...r, [field]: val } : r) || []
-      }));
+      setAppSettings(prev => ({ ...prev, gold_config: prev.gold_config?.map(r => r.id === id ? { ...r, [field]: val } : r) || [] }));
   };
-
-  // --- Render Helpers ---
 
   const handleAddWord = (e: React.FormEvent) => {
     e.preventDefault();
@@ -421,14 +438,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleArticleSelect = (lesson: Lesson, slotIndex: number, articleId: string) => {
     const currentArticles = [...(lesson.relatedArticles || [])];
-    while (currentArticles.length <= slotIndex) {
-        currentArticles.push(0);
-    }
-    if (articleId === "") {
-        currentArticles[slotIndex] = 0;
-    } else {
-        currentArticles[slotIndex] = parseInt(articleId);
-    }
+    while (currentArticles.length <= slotIndex) currentArticles.push(0);
+    if (articleId === "") currentArticles[slotIndex] = 0; else currentArticles[slotIndex] = parseInt(articleId);
     const cleanArticles = currentArticles.filter(id => id !== 0);
     onUpdateLesson(lesson.id, { relatedArticles: cleanArticles });
   };
@@ -439,22 +450,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const toggleColumn = (key: ColumnKey) => {
       if (selectedColumns.includes(key)) {
-          if (selectedColumns.length > 1) {
-              setSelectedColumns(prev => prev.filter(k => k !== key));
-          }
+          if (selectedColumns.length > 1) setSelectedColumns(prev => prev.filter(k => k !== key));
       } else {
-          if (selectedColumns.length < 7) {
-              setSelectedColumns(prev => [...prev, key]);
-          }
+          if (selectedColumns.length < 10) setSelectedColumns(prev => [...prev, key]);
       }
   };
 
   if (!isOpen) return null;
 
+  const tabs = [
+      { id: 'video', label: 'Уроки', icon: Video },
+      { id: 'courses', label: 'Курсы', icon: GraduationCap },
+      { id: 'marketplace', label: 'Магазин', icon: ShoppingBag },
+      { id: 'dict', label: 'Словарь', icon: Type },
+      { id: 'constructor', label: 'Конструктор', icon: PenTool },
+      { id: 'users', label: 'CRM', icon: Users },
+      { id: 'analytics', label: 'Аналитика', icon: BarChart },
+      { id: 'behavior', label: 'Поведение', icon: Activity },
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-neutral-900 w-full h-full md:h-[90vh] md:max-w-7xl md:rounded-2xl flex flex-col shadow-2xl overflow-hidden border-none md:border border-neutral-800">
-        {/* Header */}
         <div className="flex justify-between items-center p-4 md:p-6 border-b border-neutral-800 shrink-0 bg-neutral-900">
           <h2 className="text-xl md:text-2xl font-bold text-white">Настройки приложения</h2>
           <button onClick={onClose} className="p-2 hover:bg-neutral-800 rounded-full transition-colors">
@@ -462,57 +479,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-neutral-800 px-4 md:px-6 shrink-0 overflow-x-auto scrollbar-hide">
-            <button 
-                onClick={() => setActiveTab('video')}
-                className={`py-3 md:py-4 px-4 md:px-6 font-medium text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'video' ? 'border-red-600 text-red-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-                <Video className="w-4 h-4" /> Уроки
-            </button>
-            <button 
-                onClick={() => setActiveTab('dict')}
-                className={`py-3 md:py-4 px-4 md:px-6 font-medium text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'dict' ? 'border-red-600 text-red-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-                <Type className="w-4 h-4" /> Словарь
-            </button>
-            <button 
-                onClick={() => setActiveTab('constructor')}
-                className={`py-3 md:py-4 px-4 md:px-6 font-medium text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'constructor' ? 'border-red-600 text-red-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-                <PenTool className="w-4 h-4" /> Конструктор
-            </button>
-            <button 
-                onClick={() => setActiveTab('marketplace')}
-                className={`py-3 md:py-4 px-4 md:px-6 font-medium text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'marketplace' ? 'border-red-600 text-red-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-                <ShoppingBag className="w-4 h-4" /> Магазин
-            </button>
-            <button 
-                onClick={() => setActiveTab('users')}
-                className={`py-3 md:py-4 px-4 md:px-6 font-medium text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'users' ? 'border-red-600 text-red-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-                <Users className="w-4 h-4" /> CRM
-            </button>
-            <button 
-                onClick={() => setActiveTab('analytics')}
-                className={`py-3 md:py-4 px-4 md:px-6 font-medium text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'analytics' ? 'border-red-600 text-red-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-                <BarChart className="w-4 h-4" /> Аналитика
-            </button>
-            <button 
-                onClick={() => setActiveTab('behavior')}
-                className={`py-3 md:py-4 px-4 md:px-6 font-medium text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'behavior' ? 'border-red-600 text-red-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-                <Activity className="w-4 h-4" /> Поведение
-            </button>
+            {tabs.map(tab => (
+                <button 
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`py-3 md:py-4 px-4 md:px-6 font-medium text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === tab.id ? 'border-red-600 text-red-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
+                >
+                    <tab.icon className="w-4 h-4" /> {tab.label}
+                </button>
+            ))}
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-auto p-4 md:p-8 bg-black/20">
             {activeTab === 'video' && (
                 <div className="space-y-8">
-                     {/* Lesson management code (omitted for brevity, assume existing) */}
                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <p className="text-neutral-400 text-sm md:text-base">Управляйте списком модулей и их содержанием.</p>
                         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -568,7 +549,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
             )}
 
-            {/* (Omitted tabs: dict, constructor, users, analytics - same as before) */}
+            {activeTab === 'courses' && <CourseManager courses={courses} onSave={() => { fetchCourses(); onArticlesRefresh(); }} />}
+
+            {activeTab === 'marketplace' && <MarketplaceManager products={products} onSave={() => { fetchProducts(); onArticlesRefresh(); }} />}
+
             {activeTab === 'dict' && (
                  <div className="space-y-6">
                      <p className="text-neutral-400 mb-4 text-sm md:text-base">Добавьте слова в общий словарь.</p>
@@ -589,8 +573,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
             
             {activeTab === 'constructor' && <ArticleConstructor articles={articles} onSave={onArticlesRefresh} />}
-
-            {activeTab === 'marketplace' && <MarketplaceManager products={products} onSave={fetchProducts} />}
 
             {activeTab === 'users' && (
                 <div className="space-y-6 h-full flex flex-col">
@@ -617,7 +599,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div className="space-y-4">
                                         {viewingHistoryUser.orders_history.map((order, idx) => (
                                             <div key={order.id || idx} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-                                                {/* Order Header */}
                                                 <div className="bg-neutral-800/50 p-4 flex flex-wrap items-center justify-between gap-4 border-b border-neutral-800">
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex flex-col">
@@ -644,7 +625,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {/* Order Items */}
                                                 <div className="p-4 space-y-2">
                                                     {order.items.map((item, i) => (
                                                         <div key={i} className="flex justify-between items-center py-2 border-b border-neutral-800/50 last:border-0 last:pb-0">
@@ -708,12 +688,38 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeTab === 'analytics' && (
                 <div className="space-y-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2"><Code className="w-5 h-5 text-red-500"/> Коды отслеживания</h3>
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2"><Code className="w-5 h-5 text-red-500"/> Системные настройки</h3>
                         <button onClick={handleSaveSettings} disabled={isSavingSettings} className="bg-red-700 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all disabled:opacity-50">
                             {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4" />} Сохранить
                         </button>
                     </div>
+
+                    {settingsError === 'TABLE_MISSING' && (
+                        <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-4 mb-6">
+                            <div className="flex items-center gap-2 mb-2">
+                                <AlertTriangle className="w-6 h-6 text-red-500" />
+                                <h4 className="text-red-400 font-bold text-lg">Таблица настроек не найдена</h4>
+                            </div>
+                            <p className="text-neutral-300 text-sm mb-4">
+                                Для работы настроек и EmailJS необходимо создать таблицу <code>app_settings</code>. 
+                                Выполните этот SQL запрос в Supabase SQL Editor:
+                            </p>
+                            <div className="relative bg-black rounded-lg p-3 border border-neutral-800">
+                                <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap overflow-x-auto">
+                                    {repairSql}
+                                </pre>
+                                <button 
+                                    onClick={() => navigator.clipboard.writeText(repairSql)}
+                                    className="absolute top-2 right-2 p-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded text-xs flex items-center gap-1 transition-colors"
+                                >
+                                    <Copy className="w-3 h-3" /> Copy
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
                     <div className="grid gap-6">
+                        <h4 className="text-sm font-bold text-neutral-500 uppercase border-b border-neutral-800 pb-2">Коды отслеживания</h4>
                         <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl space-y-3">
                             <label className="text-sm font-bold text-neutral-300 uppercase block">Google Tag Manager (GTM ID)</label>
                             <input value={appSettings.gtm_id?.replace('GTM-', '') || ''} onChange={(e) => setAppSettings(prev => ({ ...prev, gtm_id: 'GTM-' + e.target.value.replace('GTM-', '') }))} placeholder="XXXXXX" className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white font-mono outline-none" />
@@ -725,6 +731,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl space-y-3">
                             <label className="text-sm font-bold text-neutral-300 uppercase block">Произвольный HTML</label>
                             <textarea value={appSettings.custom_html_body || ''} onChange={(e) => setAppSettings(prev => ({ ...prev, custom_html_body: e.target.value }))} placeholder="<script>...</script>" rows={6} className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-neutral-300 font-mono text-xs outline-none" />
+                        </div>
+                    </div>
+
+                    <div className="grid gap-6 mt-8">
+                        <h4 className="text-sm font-bold text-neutral-500 uppercase border-b border-neutral-800 pb-2 flex items-center gap-2">
+                            <Mail className="w-4 h-4" /> Настройки почты (EmailJS)
+                        </h4>
+                        <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-neutral-300 uppercase">Service ID</label>
+                                    <input value={appSettings.emailjs_service_id || ''} onChange={(e) => setAppSettings(prev => ({ ...prev, emailjs_service_id: e.target.value }))} placeholder="service_..." className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white font-mono text-sm outline-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-neutral-300 uppercase">Template ID</label>
+                                    <input value={appSettings.emailjs_template_id || ''} onChange={(e) => setAppSettings(prev => ({ ...prev, emailjs_template_id: e.target.value }))} placeholder="template_..." className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white font-mono text-sm outline-none" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-neutral-300 uppercase">Public Key</label>
+                                <input value={appSettings.emailjs_public_key || ''} onChange={(e) => setAppSettings(prev => ({ ...prev, emailjs_public_key: e.target.value }))} placeholder="user_..." className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white font-mono text-sm outline-none" />
+                            </div>
+                            <p className="text-xs text-neutral-500 mt-2">
+                                Эти данные можно найти в панели управления EmailJS (Account / Email Services).
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -743,7 +774,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* RULES BUILDER */}
                         <div className="bg-neutral-900 border border-yellow-900/30 p-6 rounded-xl space-y-6 h-full">
                             <div className="flex items-start gap-4">
                                 <div className="p-3 bg-yellow-900/20 rounded-full border border-yellow-700/30">
@@ -820,7 +850,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
                         </div>
 
-                        {/* FULL METRICS REFERENCE LIST */}
                         <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl overflow-hidden flex flex-col h-full">
                             <div className="flex items-center gap-3 mb-4 shrink-0">
                                 <List className="w-5 h-5 text-neutral-500" />
@@ -844,7 +873,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                     </div>
 
-                    {/* REALTIME DEBUGGER PANEL */}
                     <div className="bg-black/40 border border-neutral-800 p-4 md:p-6 rounded-xl mt-6">
                         <div className="flex items-center gap-2 mb-4 border-b border-neutral-800 pb-2">
                              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -853,7 +881,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         
                         {realtimeMetrics ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
-                                {/* 1. CONTEXT */}
                                 <div className="bg-neutral-900 p-3 rounded border border-neutral-800 space-y-2">
                                     <h5 className="text-neutral-500 font-bold flex items-center gap-2"><Monitor className="w-3 h-3"/> Context</h5>
                                     <div className="space-y-1 text-neutral-300">
@@ -863,7 +890,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <div className="flex justify-between"><span>Wifi:</span> <span className={realtimeMetrics.context.is_wifi ? "text-green-500" : "text-neutral-600"}>{realtimeMetrics.context.is_wifi ? 'Yes' : '?'}</span></div>
                                     </div>
                                 </div>
-                                {/* 2. SOURCE & TIME */}
                                 <div className="bg-neutral-900 p-3 rounded border border-neutral-800 space-y-2">
                                     <h5 className="text-neutral-500 font-bold flex items-center gap-2"><Globe className="w-3 h-3"/> Source / Time</h5>
                                     <div className="space-y-1 text-neutral-300">
@@ -873,7 +899,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <div className="flex justify-between"><span>Hour:</span> <span className="text-white">{realtimeMetrics.temporal.hour_of_day}:00</span></div>
                                     </div>
                                 </div>
-                                {/* 3. BEHAVIOR */}
                                 <div className="bg-neutral-900 p-3 rounded border border-neutral-800 space-y-2">
                                     <h5 className="text-neutral-500 font-bold flex items-center gap-2"><Eye className="w-3 h-3"/> Behavior</h5>
                                     <div className="space-y-1 text-neutral-300">
@@ -883,7 +908,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <div className="flex justify-between"><span>Avg Page:</span> <span className="text-white">{realtimeMetrics.behavior.avg_time_per_page.toFixed(0)}s</span></div>
                                     </div>
                                 </div>
-                                {/* 4. ECOMMERCE & CALC */}
                                 <div className="bg-neutral-900 p-3 rounded border border-neutral-800 space-y-2">
                                     <h5 className="text-neutral-500 font-bold flex items-center gap-2"><ShoppingCart className="w-3 h-3"/> E-com / Calc</h5>
                                     <div className="space-y-1 text-neutral-300">
@@ -916,7 +940,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
         </div>
         
-        {/* Footer */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-900 flex justify-end shrink-0">
             <button onClick={onClose} className="w-full md:w-auto px-6 py-3 md:py-2 bg-white text-neutral-900 rounded-lg hover:bg-gray-200 transition-colors font-medium shadow-lg">
                 Готово

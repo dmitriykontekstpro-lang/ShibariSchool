@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { X, ShoppingBag, Info, ChevronDown, ChevronUp, Image as ImageIcon, Video, ArrowRight, ShoppingCart } from 'lucide-react';
 import { Product, CartItem } from '../types';
@@ -10,10 +11,13 @@ interface MarketplaceModalProps {
   cart: CartItem[];
   addToCart: (product: Product) => void;
   openCart: () => void;
+  lang: 'ru' | 'en';
+  t: any;
+  getData: (item: any, field: string) => string;
 }
 
 const MarketplaceModal: React.FC<MarketplaceModalProps> = ({ 
-    isOpen, onClose, products, cart, addToCart, openCart 
+    isOpen, onClose, products, cart, addToCart, openCart, lang, t, getData
 }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -38,8 +42,8 @@ const MarketplaceModal: React.FC<MarketplaceModalProps> = ({
                 )}
              </button>
              <div>
-                <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight uppercase">Магазин</h2>
-                <p className="text-[10px] md:text-xs text-neutral-400">Веревки, наборы и аксессуары</p>
+                <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight uppercase">{t.shop}</h2>
+                <p className="text-[10px] md:text-xs text-neutral-400">{t.shop_subtitle}</p>
              </div>
         </div>
         <button 
@@ -56,7 +60,7 @@ const MarketplaceModal: React.FC<MarketplaceModalProps> = ({
              {products.length === 0 ? (
                  <div className="flex flex-col items-center justify-center h-64 text-neutral-500">
                      <ShoppingBag className="w-12 h-12 mb-4 opacity-20" />
-                     <p>Витрина пока пуста.</p>
+                     <p>Empty.</p>
                  </div>
              ) : (
                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
@@ -71,7 +75,7 @@ const MarketplaceModal: React.FC<MarketplaceModalProps> = ({
                                  {product.images?.[0] ? (
                                      <img 
                                         src={product.images[0]} 
-                                        alt={product.title} 
+                                        alt={getData(product, 'title')} 
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                                      />
                                  ) : (
@@ -81,7 +85,7 @@ const MarketplaceModal: React.FC<MarketplaceModalProps> = ({
                                  )}
                                  {/* Quick Add Overlay (Desktop) */}
                                  <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/90 to-transparent hidden md:flex justify-center">
-                                     <span className="text-xs text-white font-medium">Подробнее</span>
+                                     <span className="text-xs text-white font-medium">{t.details}</span>
                                  </div>
                              </div>
                              
@@ -89,10 +93,10 @@ const MarketplaceModal: React.FC<MarketplaceModalProps> = ({
                              <div className="p-3 md:p-4 flex flex-col flex-1 gap-2">
                                  <div className="flex-1 min-w-0">
                                     <h3 className="text-xs md:text-sm font-bold text-white leading-tight line-clamp-2 mb-1 group-hover:text-red-600 transition-colors">
-                                        {product.title}
+                                        {getData(product, 'title')}
                                     </h3>
                                     <p className="text-[10px] text-neutral-400 line-clamp-1">
-                                        {product.description_short}
+                                        {getData(product, 'description_short')}
                                     </p>
                                  </div>
                                  
@@ -124,13 +128,13 @@ const MarketplaceModal: React.FC<MarketplaceModalProps> = ({
 
       {/* Product Detail Modal */}
       {selectedProduct && (
-          <ProductDetailOverlay product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={() => addToCart(selectedProduct)} />
+          <ProductDetailOverlay product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={() => addToCart(selectedProduct)} t={t} getData={getData} />
       )}
     </div>
   );
 };
 
-const ProductDetailOverlay: React.FC<{ product: Product, onClose: () => void, onAdd: () => void }> = ({ product, onClose, onAdd }) => {
+const ProductDetailOverlay: React.FC<{ product: Product, onClose: () => void, onAdd: () => void, t: any, getData: any }> = ({ product, onClose, onAdd, t, getData }) => {
     const [activeImage, setActiveImage] = useState(product.images?.[0] || '');
     const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
@@ -167,7 +171,7 @@ const ProductDetailOverlay: React.FC<{ product: Product, onClose: () => void, on
                      {/* Video Section if exists */}
                      {product.video_url && (
                          <div className="p-4 border-t border-white/10 bg-black">
-                             <p className="text-xs font-bold text-neutral-500 uppercase mb-2 flex items-center gap-2"><Video className="w-3 h-3"/> Обзор товара</p>
+                             <p className="text-xs font-bold text-neutral-500 uppercase mb-2 flex items-center gap-2"><Video className="w-3 h-3"/> Review</p>
                              <div className="rounded-lg overflow-hidden border border-neutral-800">
                                 <VideoPlayer url={product.video_url} />
                              </div>
@@ -182,21 +186,21 @@ const ProductDetailOverlay: React.FC<{ product: Product, onClose: () => void, on
                         <div className="flex items-center gap-3 mb-6">
                              {product.color && (
                                  <span className="text-[10px] font-bold uppercase tracking-wider bg-white/10 text-neutral-200 px-3 py-1 rounded border border-white/10">
-                                     {product.color}
+                                     {getData(product, 'color')}
                                  </span>
                              )}
                              <span className="text-[10px] font-bold uppercase tracking-wider bg-red-600 text-white px-3 py-1 rounded border border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)]">
-                                 В наличии
+                                 {t.in_stock}
                              </span>
                         </div>
                         
                         {/* Title & Price */}
-                        <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight mb-3 tracking-tight">{product.title}</h2>
+                        <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight mb-3 tracking-tight">{getData(product, 'title')}</h2>
                         {product.price && <div className="text-2xl font-mono font-bold text-red-600 mb-6">${product.price}</div>}
                         
                         {/* Short Description */}
                         <p className="text-neutral-400 text-base leading-relaxed border-l-2 border-neutral-800 pl-4">
-                            {product.description_short}
+                            {getData(product, 'description_short')}
                         </p>
                     </div>
 
@@ -205,22 +209,22 @@ const ProductDetailOverlay: React.FC<{ product: Product, onClose: () => void, on
                         className="w-full bg-white hover:bg-neutral-200 text-black font-bold py-4 rounded-xl shadow-lg mb-10 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm tracking-wide uppercase"
                     >
                         <ShoppingBag className="w-5 h-5" />
-                        Добавить в корзину
+                        {t.add_to_cart}
                     </button>
 
                     <div className="space-y-10">
                         <div>
-                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-[0.2em] mb-4">Описание</h3>
+                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-[0.2em] mb-4">{t.description}</h3>
                             <div className="prose prose-invert max-w-none">
                                 <p className="text-neutral-300 text-base leading-8 whitespace-pre-line font-normal opacity-90">
-                                    {product.description_long || "Полное описание отсутствует."}
+                                    {getData(product, 'description_long') || "No description."}
                                 </p>
                             </div>
                         </div>
 
                         {product.faq && product.faq.length > 0 && (
                             <div>
-                                <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-[0.2em] mb-4">Частые вопросы</h3>
+                                <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-[0.2em] mb-4">{t.faq}</h3>
                                 <div className="space-y-3">
                                     {product.faq.map((item, idx) => (
                                         <div key={idx} className="bg-black rounded-lg border border-white/10 overflow-hidden hover:border-white/30 transition-colors">

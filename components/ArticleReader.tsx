@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X, ArrowRight, ExternalLink } from 'lucide-react';
 import { Article, ArticleBlock } from '../types';
@@ -5,12 +6,18 @@ import { Article, ArticleBlock } from '../types';
 interface ArticleReaderProps {
   article: Article | null;
   onClose: () => void;
+  lang?: 'ru' | 'en';
+  t?: any;
+  getData?: (item: any, field: string) => string;
 }
 
-const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onClose }) => {
+const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onClose, lang='ru', t, getData }) => {
   if (!article) return null;
+  const _getData = getData || ((i: any, f: string) => i[f]);
 
   const hasContent = article.content && article.content.length > 0;
+  // Note: We only have 'content' in JSON, we assume content is in Russian for now as per prompt "articles not touched"
+  // However, header/lead/description are localized.
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-neutral-950 animate-in slide-in-from-bottom-10 duration-300">
@@ -23,10 +30,10 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onClose }) => {
       <div className="flex justify-between items-start p-4 md:p-6 border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-3xl">
             <span className="text-xs font-bold text-red-500 uppercase tracking-widest bg-red-950/30 px-2 py-1 rounded border border-red-900/20 mb-2 inline-block">
-                Статья
+                Article
             </span>
             <h1 className="text-xl md:text-3xl font-bold text-white leading-tight">
-                {article.title}
+                {_getData(article, 'title')}
             </h1>
         </div>
         <button 
@@ -44,7 +51,7 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onClose }) => {
             {/* Lead / Description */}
             {article.description && (
                 <p className="text-xl md:text-2xl text-neutral-300 font-light leading-relaxed border-l-4 border-red-800 pl-6 italic">
-                    {article.description}
+                    {_getData(article, 'description')}
                 </p>
             )}
 
@@ -55,7 +62,7 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onClose }) => {
                 ))
             ) : (
                 <div className="text-center py-12 text-neutral-500 bg-neutral-900/30 rounded-xl border border-dashed border-neutral-800">
-                    <p className="mb-4">Для этой статьи пока нет внутреннего контента.</p>
+                    <p className="mb-4">{lang === 'en' ? 'No internal content.' : 'Для этой статьи пока нет внутреннего контента.'}</p>
                     {article.url && article.url !== '#' && (
                         <a 
                             href={article.url} 
@@ -63,7 +70,7 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onClose }) => {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 text-red-500 hover:text-red-400 font-medium transition-colors"
                         >
-                            Читать во внешнем источнике <ExternalLink className="w-4 h-4" />
+                             {lang === 'en' ? 'Read External' : 'Читать во внешнем источнике'} <ExternalLink className="w-4 h-4" />
                         </a>
                     )}
                 </div>
@@ -75,7 +82,7 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onClose }) => {
                     onClick={onClose}
                     className="text-neutral-500 hover:text-white transition-colors text-sm flex items-center justify-center gap-2 mx-auto"
                 >
-                    Закрыть статью
+                    Close
                 </button>
             </div>
         </div>
@@ -139,7 +146,7 @@ const BlockRenderer: React.FC<{ block: ArticleBlock }> = ({ block }) => {
                                     />
                                 ) : (
                                     <div className="aspect-video flex items-center justify-center text-neutral-700 bg-neutral-950">
-                                        Нет изображения
+                                        No image
                                     </div>
                                 )}
                             </div>

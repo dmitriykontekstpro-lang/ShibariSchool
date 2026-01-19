@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { DictionaryEntry } from '../types';
 
@@ -5,56 +6,63 @@ interface TextContentProps {
   paragraphs: string[];
   dictionary: DictionaryEntry[];
   onWordClick: (term: string) => void;
+  lang?: 'ru' | 'en';
 }
 
-const TextContent: React.FC<TextContentProps> = ({ paragraphs, dictionary, onWordClick }) => {
+const TextContent: React.FC<TextContentProps> = ({ paragraphs, dictionary, onWordClick, lang='ru' }) => {
   
   // Create a regex to find dictionary terms (case insensitive)
   const regex = useMemo(() => {
     if (dictionary.length === 0) return null;
-    // Sort by length descending to match longest phrases first (e.g. "Machine Learning" before "Machine")
-    const terms = dictionary.map(d => d.term).sort((a, b) => b.length - a.length);
+    
+    // Collect all terms (main and english)
+    let terms: string[] = [];
+    dictionary.forEach(d => {
+        if (d.term) terms.push(d.term);
+        if (d.term_en) terms.push(d.term_en);
+    });
+
+    // Sort by length descending to match longest phrases first
+    terms = terms.sort((a, b) => b.length - a.length);
+    
+    if (terms.length === 0) return null;
+
     // Escape special regex characters in terms
     const escapedTerms = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     
-    // Используем Unicode property escapes (\p{L}) для корректной работы с кириллицей.
-    // Стандартная граница слова \b не работает для русских букв в JS RegExp по умолчанию.
-    // Паттерн: 
-    // 1. (^|[^...]) - захватываем начало строки или не-буквенный символ перед словом (разделитель)
-    // 2. (term) - само слово
-    // 3. (?=...) - lookahead (проверка без захвата) на конец строки или не-буквенный символ после
     return new RegExp(`(^|[^\\p{L}\\p{N}_])(${escapedTerms.join('|')})(?=[^\\p{L}\\p{N}_]|$)`, 'gui');
   }, [dictionary]);
 
   const renderParagraph = (text: string, index: number) => {
     if (!regex) return <p key={index} className="mb-4 text-base md:text-lg leading-relaxed text-gray-300">{text}</p>;
 
-    // Split text using the regex. 
-    // Поскольку мы используем захватывающие группы в RegExp (prefix и term), split вернет их в массиве.
     const parts = text.split(regex);
     
     return (
       <p key={index} className="mb-4 text-base md:text-lg leading-relaxed text-gray-300">
         {parts.map((part, i) => {
-            // Защита от undefined, которые могут возникать при split с группами
             if (part === undefined) return null;
 
-            // Check if this part is a dictionary term (case insensitive check)
-            const match = dictionary.find(d => d.term.toLowerCase() === part.toLowerCase());
+            // Check if this part is a dictionary term (case insensitive check against any version)
+            const match = dictionary.find(d => 
+                (d.term && d.term.toLowerCase() === part.toLowerCase()) || 
+                (d.term_en && d.term_en.toLowerCase() === part.toLowerCase())
+            );
             
             if (match) {
+                // Pass the term that was actually matched (or just the main term, 
+                // but passing match.term ensures the drawer opens the correct entry)
                 return (
                     <span
                         key={i}
-                        onClick={() => onWordClick(match.term)}
+                        onClick={() => onWordClick(part)} // Pass the clicked word to find it in drawer
                         className="text-red-500 cursor-pointer font-bold hover:text-red-400 transition-colors"
-                        title="Нажмите для пояснения"
+                        title="Info"
                     >
                         {part}
                     </span>
                 );
             }
-            // Рендер обычного текста (включая разделители, попавшие в split)
             return <span key={i}>{part}</span>;
         })}
       </p>
