@@ -99,6 +99,39 @@ export interface Course {
   created_at?: string;
 }
 
+// --- Catalog Types ---
+
+export interface CatalogSubcategory {
+  id: string;
+  label: string;
+}
+
+export interface CatalogCategory {
+  id: string;
+  label: string;
+  subcategories?: CatalogSubcategory[]; // Nested JSON array
+  created_at?: string;
+}
+
+// New interface for linking a video to a specific category/subcategory pair
+export interface VideoCategoryRef {
+  categoryId: string;
+  subcategoryId?: string;
+}
+
+export interface CatalogVideo {
+  id: number;
+  title: string;
+  description: string;
+  video_url: string;
+  // Legacy fields (kept for compatibility during migration)
+  category_id?: string; 
+  subcategory_id?: string;
+  // New field for multiple categories
+  category_refs: VideoCategoryRef[];
+  created_at?: string;
+}
+
 export interface CartItem {
   product: Product;
   quantity: number;

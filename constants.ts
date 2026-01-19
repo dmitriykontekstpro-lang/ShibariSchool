@@ -1,6 +1,6 @@
 
 
-import { Lesson, DictionaryEntry, Article, Product, Course } from './types';
+import { Lesson, DictionaryEntry, Article, Product, Course, CatalogCategory, CatalogVideo } from './types';
 
 // EmailJS Default Configuration (Used for initialization)
 export const DEFAULT_EMAILJS_PUBLIC_KEY = 'o38PgmQCq4yaVRdhP';
@@ -13,6 +13,8 @@ export const UI_TRANSLATIONS = {
     shop_subtitle: "Веревки, наборы и аксессуары",
     courses: "Курсы",
     courses_subtitle: "Обучающие видеопрограммы",
+    catalog: "Каталог",
+    catalog_subtitle: "Библиотека видео",
     cart: "Корзина",
     articles: "Статьи",
     dictionary: "Словарь",
@@ -60,6 +62,8 @@ export const UI_TRANSLATIONS = {
     shop_subtitle: "Ropes, kits & accessories",
     courses: "Courses",
     courses_subtitle: "Educational video programs",
+    catalog: "Catalog",
+    catalog_subtitle: "Video Library",
     cart: "Cart",
     articles: "Articles",
     dictionary: "Glossary",
@@ -247,4 +251,140 @@ export const INITIAL_COURSES: Course[] = [
         faq: []
     }
 ];
+
+// --- INITIAL CATALOG DATA ---
+
+export const INITIAL_CATALOG_CATEGORIES: CatalogCategory[] = [
+    {
+        id: 'cat_level',
+        label: 'Уровень',
+        subcategories: [
+            { id: 'lvl_new', label: 'Новичкам' },
+            { id: 'lvl_cont', label: 'Продолжающим' },
+            { id: 'lvl_exp', label: 'Экспертам' },
+            { id: 'lvl_pro', label: 'Профи' }
+        ]
+    },
+    {
+        id: 'cat_content',
+        label: 'Содержимое',
+        subcategories: [
+            { id: 'cont_prac', label: 'Практика' },
+            { id: 'cont_theo', label: 'Теория' }
+        ]
+    },
+    {
+        id: 'cat_type',
+        label: 'Тип материала',
+        subcategories: [
+            { id: 'type_lec', label: 'Лекция' },
+            { id: 'type_lab', label: 'Лаб' },
+            { id: 'type_les', label: 'Урок' },
+            { id: 'type_stream', label: 'Стрим' },
+            { id: 'type_broadcast', label: 'Трансляция' }
+        ]
+    },
+    {
+        id: 'cat_length',
+        label: 'Длина',
+        subcategories: [
+            { id: 'len_short', label: 'Короткий' },
+            { id: 'len_med', label: 'Средний' },
+            { id: 'len_long', label: 'Длинный' },
+            { id: 'len_none', label: 'Нет' }
+        ]
+    },
+    {
+        id: 'cat_teacher',
+        label: 'Преподаватель',
+        subcategories: [
+            { id: 'teach_enot', label: 'Енот' },
+            { id: 'teach_maria', label: 'Мария' },
+            { id: 'teach_anna', label: 'Анна' },
+            { id: 'teach_none', label: 'Нет' }
+        ]
+    },
+    {
+        id: 'cat_body',
+        label: 'Часть тела',
+        subcategories: [
+            { id: 'body_arms', label: 'Руки' },
+            { id: 'body_head', label: 'Голова' },
+            { id: 'body_hip', label: 'Бедро' },
+            { id: 'body_foot', label: 'Ступня' },
+            { id: 'body_hand', label: 'Рука' },
+            { id: 'body_torso', label: 'Торс' },
+            { id: 'body_chest', label: 'Грудь' },
+            { id: 'body_mix', label: 'Микс' },
+            { id: 'body_none', label: 'Нет' }
+        ]
+    },
+    {
+        id: 'cat_lesson_type',
+        label: 'Тип урока',
+        subcategories: [
+            { id: 'lt_med', label: 'Медицина' },
+            { id: 'lt_tie', label: 'Обвязка' },
+            { id: 'lt_anat', label: 'Анатомия' },
+            { id: 'lt_cert', label: 'Сертификация' }
+        ]
+    },
+    {
+        id: 'cat_nawazu',
+        label: 'Навадзу',
+        subcategories: [
+            { id: 'naw_1a', label: '1A-ku' },
+            { id: 'naw_1b', label: '1B-ku' },
+            { id: 'naw_2a', label: '2A-ku' },
+            { id: 'naw_2b', label: '2B-ku' },
+            { id: 'naw_none', label: 'Нет' }
+        ]
+    },
+    {
+        id: 'cat_tie_name',
+        label: 'Обвязка',
+        subcategories: [
+            { id: 'tie_futo', label: 'Футомомо' },
+            { id: 'tie_tk', label: 'ТК' },
+            { id: 'tie_agura', label: 'Агура' },
+            { id: 'tie_teppo', label: 'Теппо' },
+            { id: 'tie_none', label: 'Нет' }
+        ]
+    },
+    {
+        id: 'cat_suspension',
+        label: 'Подвесы',
+        subcategories: [
+            { id: 'susp_full', label: 'Подвес' },
+            { id: 'susp_floor', label: 'На полу' },
+            { id: 'susp_part', label: 'Полуподвес' },
+            { id: 'susp_none', label: 'Нет' }
+        ]
+    }
+];
+
+export const INITIAL_CATALOG_VIDEOS: CatalogVideo[] = [
+    { 
+        id: 1, 
+        title: 'Прямой узел', 
+        description: 'Основа всех основ.', 
+        video_url: 'https://youtu.be/kIhIR9Kl8ZA', 
+        category_refs: [{ categoryId: 'cat_level', subcategoryId: 'lvl_new' }]
+    },
+    { 
+        id: 2, 
+        title: 'Грудная обвязка', 
+        description: 'Классика.', 
+        video_url: 'https://youtu.be/kIhIR9Kl8ZA', 
+        category_refs: [{ categoryId: 'cat_tie_name', subcategoryId: 'tie_tk' }]
+    },
+    { 
+        id: 3, 
+        title: 'Боковой подвес', 
+        description: 'Техника безопасности.', 
+        video_url: 'https://youtu.be/kIhIR9Kl8ZA', 
+        category_refs: [{ categoryId: 'cat_suspension', subcategoryId: 'susp_part' }]
+    },
+];
+
 export const APP_LOGO_URL = "https://cqpqyhehoiybggjuljzn.supabase.co/storage/v1/object/public/Enot/raccoon_logo.png";

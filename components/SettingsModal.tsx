@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Save, Video, Type, RefreshCw, Link, PenTool, Users, CheckCircle, XCircle, ChevronDown, Loader2, BarChart, Code, Activity, Eye, Monitor, ShoppingBag, ClipboardList, Package, Calendar, DollarSign, ArrowLeft, GraduationCap, Mail, AlertTriangle, Copy, List, Globe, ShoppingCart } from 'lucide-react';
-import { DictionaryEntry, Lesson, Article, UserProfile, AppSettings, MetricRule, MetricType, Product, Course } from '../types';
+import { X, Plus, Trash2, Save, Video, Type, RefreshCw, Link, PenTool, Users, CheckCircle, XCircle, ChevronDown, Loader2, BarChart, Code, Activity, Eye, Monitor, ShoppingBag, ClipboardList, Package, Calendar, DollarSign, ArrowLeft, GraduationCap, Mail, AlertTriangle, Copy, List, Globe, ShoppingCart, FolderOpen } from 'lucide-react';
+import { DictionaryEntry, Lesson, Article, UserProfile, AppSettings, MetricRule, MetricType, Product, Course, CatalogCategory, CatalogVideo } from '../types';
 import ArticleConstructor from './ArticleConstructor';
 import MarketplaceManager from './MarketplaceManager';
 import CourseManager from './CourseManager';
+import CatalogManager from './CatalogManager';
 import { supabase } from '../supabaseClient';
 import BehaviorTracker, { AdvancedSessionMetrics } from '../utils/BehaviorTracker';
 import { DEFAULT_EMAILJS_PUBLIC_KEY, DEFAULT_EMAILJS_SERVICE_ID, DEFAULT_EMAILJS_TEMPLATE_ID } from '../constants';
@@ -14,6 +15,8 @@ interface SettingsModalProps {
   lessons: Lesson[];
   dictionary: DictionaryEntry[];
   articles: Article[];
+  catalogCategories?: CatalogCategory[];
+  catalogVideos?: CatalogVideo[];
   onUpdateLesson: (id: number, data: Partial<Lesson>) => void;
   onAddLesson: () => void;
   onRemoveLesson: (id: number) => void;
@@ -23,6 +26,7 @@ interface SettingsModalProps {
   onArticlesRefresh: () => void; 
 }
 
+// ... (Rest of Metric Definitions and Constants remains the same)
 // --- CRM Constants ---
 type ColumnKey = 
   | 'full_name'
@@ -58,7 +62,6 @@ const DEFAULT_COLUMN_KEYS: ColumnKey[] = [
     'subscription_months'
 ];
 
-// ... (Metric Definitions)
 interface MetricDefinition {
     key: string;
     label: string;
@@ -82,10 +85,11 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
   isOpen, onClose, lessons, dictionary, articles, 
+  catalogCategories = [], catalogVideos = [],
   onUpdateLesson, onAddLesson, onRemoveLesson, 
   onAddWord, onRemoveWord, onResetToDefaults, onArticlesRefresh
 }) => {
-  const [activeTab, setActiveTab] = useState<'video' | 'dict' | 'constructor' | 'users' | 'analytics' | 'behavior' | 'marketplace' | 'courses'>('video');
+  const [activeTab, setActiveTab] = useState<'video' | 'dict' | 'constructor' | 'users' | 'analytics' | 'behavior' | 'marketplace' | 'courses' | 'catalog'>('video');
   const [newTerm, setNewTerm] = useState('');
   const [newDef, setNewDef] = useState('');
 
@@ -114,10 +118,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   // Realtime Debugger State
   const [realtimeMetrics, setRealtimeMetrics] = useState<AdvancedSessionMetrics | null>(null);
 
-  // Marketplace & Courses Local State (for editing)
+  // Data Local State (for editing)
   const [products, setProducts] = useState<Product[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-
+  
   // Columns Configuration (Memoized)
   const allColumns: ColumnConfig[] = useMemo(() => [
     { 
@@ -461,6 +465,7 @@ where app_settings.emailjs_public_key is null;
   const tabs = [
       { id: 'video', label: 'Уроки', icon: Video },
       { id: 'courses', label: 'Курсы', icon: GraduationCap },
+      { id: 'catalog', label: 'Каталог', icon: FolderOpen },
       { id: 'marketplace', label: 'Магазин', icon: ShoppingBag },
       { id: 'dict', label: 'Словарь', icon: Type },
       { id: 'constructor', label: 'Конструктор', icon: PenTool },
@@ -494,6 +499,7 @@ where app_settings.emailjs_public_key is null;
         <div className="flex-1 overflow-auto p-4 md:p-8 bg-black/20">
             {activeTab === 'video' && (
                 <div className="space-y-8">
+                     {/* ... Video Content ... */}
                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <p className="text-neutral-400 text-sm md:text-base">Управляйте списком модулей и их содержанием.</p>
                         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -551,10 +557,20 @@ where app_settings.emailjs_public_key is null;
 
             {activeTab === 'courses' && <CourseManager courses={courses} onSave={() => { fetchCourses(); onArticlesRefresh(); }} />}
 
+            {activeTab === 'catalog' && (
+                <CatalogManager 
+                    categories={catalogCategories} 
+                    videos={catalogVideos} 
+                    onSave={() => { onArticlesRefresh(); }} 
+                />
+            )}
+
             {activeTab === 'marketplace' && <MarketplaceManager products={products} onSave={() => { fetchProducts(); onArticlesRefresh(); }} />}
 
+            {/* ... Other Tabs ... */}
             {activeTab === 'dict' && (
                  <div className="space-y-6">
+                     {/* ... Dictionary Content ... */}
                      <p className="text-neutral-400 mb-4 text-sm md:text-base">Добавьте слова в общий словарь.</p>
                      <form onSubmit={handleAddWord} className="bg-neutral-900 p-4 md:p-6 rounded-xl border border-red-900/30 mb-8 sticky top-0 z-10 shadow-lg flex gap-4">
                         <input value={newTerm} onChange={e => setNewTerm(e.target.value)} placeholder="Слово" className="w-1/3 px-4 py-3 bg-neutral-800 rounded-lg border border-neutral-700 text-white" required />
@@ -576,6 +592,7 @@ where app_settings.emailjs_public_key is null;
 
             {activeTab === 'users' && (
                 <div className="space-y-6 h-full flex flex-col">
+                    {/* ... CRM Content (Users) ... */}
                     {viewingHistoryUser ? (
                         <div className="flex flex-col h-full space-y-6 animate-in slide-in-from-right duration-300">
                             <div className="flex items-center gap-4 pb-4 border-b border-neutral-800 shrink-0">
@@ -599,6 +616,7 @@ where app_settings.emailjs_public_key is null;
                                     <div className="space-y-4">
                                         {viewingHistoryUser.orders_history.map((order, idx) => (
                                             <div key={order.id || idx} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+                                                {/* ... Order Card ... */}
                                                 <div className="bg-neutral-800/50 p-4 flex flex-wrap items-center justify-between gap-4 border-b border-neutral-800">
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex flex-col">
@@ -685,8 +703,10 @@ where app_settings.emailjs_public_key is null;
                 </div>
             )}
 
+            {/* ... Analytics, Behavior Tabs ... */}
             {activeTab === 'analytics' && (
                 <div className="space-y-6">
+                    {/* ... Analytics Content ... */}
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-white flex items-center gap-2"><Code className="w-5 h-5 text-red-500"/> Системные настройки</h3>
                         <button onClick={handleSaveSettings} disabled={isSavingSettings} className="bg-red-700 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all disabled:opacity-50">
@@ -718,6 +738,7 @@ where app_settings.emailjs_public_key is null;
                         </div>
                     )}
                     
+                    {/* ... Forms ... */}
                     <div className="grid gap-6">
                         <h4 className="text-sm font-bold text-neutral-500 uppercase border-b border-neutral-800 pb-2">Коды отслеживания</h4>
                         <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl space-y-3">
@@ -763,6 +784,7 @@ where app_settings.emailjs_public_key is null;
 
             {activeTab === 'behavior' && (
                 <div className="space-y-6">
+                     {/* ... Behavior Content ... */}
                      <div className="flex items-center justify-between mb-4">
                         <div className="space-y-1">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2"><Activity className="w-5 h-5 text-yellow-500"/> Поведение (Tracker)</h3>
@@ -775,6 +797,7 @@ where app_settings.emailjs_public_key is null;
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-neutral-900 border border-yellow-900/30 p-6 rounded-xl space-y-6 h-full">
+                            {/* ... Rules Editor ... */}
                             <div className="flex items-start gap-4">
                                 <div className="p-3 bg-yellow-900/20 rounded-full border border-yellow-700/30">
                                     <Activity className="w-6 h-6 text-yellow-500" />
@@ -853,97 +876,21 @@ where app_settings.emailjs_public_key is null;
                         <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl overflow-hidden flex flex-col h-full">
                             <div className="flex items-center gap-3 mb-4 shrink-0">
                                 <List className="w-5 h-5 text-neutral-500" />
-                                <h4 className="font-bold text-white">Справочник характеристик</h4>
+                                <h3 className="text-lg font-bold text-white">Реалтайм метрики</h3>
                             </div>
-                            <div className="flex-1 overflow-y-auto pr-2 space-y-4 text-xs">
-                                {['Behavior', 'Ecommerce', 'Context', 'Time', 'Source'].map(cat => (
-                                    <div key={cat}>
-                                        <h5 className="text-[10px] uppercase font-bold text-neutral-500 mb-2 border-b border-neutral-800 pb-1">{cat}</h5>
-                                        <div className="space-y-1">
-                                            {METRIC_DEFINITIONS.filter(m => m.category === cat).map(m => (
-                                                <div key={m.key} className="flex justify-between items-center py-1 group">
-                                                    <span className="text-neutral-300 group-hover:text-white transition-colors">{m.label}</span>
-                                                    <code className="text-[10px] text-neutral-600 font-mono bg-black/30 px-1 rounded">{m.type}</code>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="flex-1 overflow-y-auto bg-black/40 rounded-lg p-4 border border-neutral-800">
+                                {realtimeMetrics ? (
+                                    <pre className="text-[10px] text-green-400 font-mono whitespace-pre-wrap">
+                                        {JSON.stringify(realtimeMetrics, null, 2)}
+                                    </pre>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center text-neutral-600 text-xs">Waiting for data...</div>
+                                )}
                             </div>
                         </div>
-                    </div>
-
-                    <div className="bg-black/40 border border-neutral-800 p-4 md:p-6 rounded-xl mt-6">
-                        <div className="flex items-center gap-2 mb-4 border-b border-neutral-800 pb-2">
-                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                             <h4 className="font-bold text-white uppercase text-xs tracking-widest">Live Session Debugger (Текущие метрики)</h4>
-                        </div>
-                        
-                        {realtimeMetrics ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
-                                <div className="bg-neutral-900 p-3 rounded border border-neutral-800 space-y-2">
-                                    <h5 className="text-neutral-500 font-bold flex items-center gap-2"><Monitor className="w-3 h-3"/> Context</h5>
-                                    <div className="space-y-1 text-neutral-300">
-                                        <div className="flex justify-between"><span>Device:</span> <span className="text-white">{realtimeMetrics.context.device_category}</span></div>
-                                        <div className="flex justify-between"><span>OS:</span> <span className="text-white">{realtimeMetrics.context.os_type}</span></div>
-                                        <div className="flex justify-between"><span>Res:</span> <span className="text-white">{realtimeMetrics.context.screen_resolution}</span></div>
-                                        <div className="flex justify-between"><span>Wifi:</span> <span className={realtimeMetrics.context.is_wifi ? "text-green-500" : "text-neutral-600"}>{realtimeMetrics.context.is_wifi ? 'Yes' : '?'}</span></div>
-                                    </div>
-                                </div>
-                                <div className="bg-neutral-900 p-3 rounded border border-neutral-800 space-y-2">
-                                    <h5 className="text-neutral-500 font-bold flex items-center gap-2"><Globe className="w-3 h-3"/> Source / Time</h5>
-                                    <div className="space-y-1 text-neutral-300">
-                                        <div className="flex justify-between"><span>Source:</span> <span className="text-white truncate max-w-[80px]">{realtimeMetrics.source.traffic_source}</span></div>
-                                        <div className="flex justify-between"><span>Total Time:</span> <span className={realtimeMetrics._internal.total_seconds < 30 ? "text-red-500" : "text-green-500"}>{realtimeMetrics._internal.total_seconds}s</span></div>
-                                        <div className="flex justify-between"><span>Active:</span> <span className="text-yellow-500">{realtimeMetrics._internal.active_seconds}s</span></div>
-                                        <div className="flex justify-between"><span>Hour:</span> <span className="text-white">{realtimeMetrics.temporal.hour_of_day}:00</span></div>
-                                    </div>
-                                </div>
-                                <div className="bg-neutral-900 p-3 rounded border border-neutral-800 space-y-2">
-                                    <h5 className="text-neutral-500 font-bold flex items-center gap-2"><Eye className="w-3 h-3"/> Behavior</h5>
-                                    <div className="space-y-1 text-neutral-300">
-                                        <div className="flex justify-between"><span>Pages:</span> <span className="text-white">{realtimeMetrics.behavior.total_pageviews}</span></div>
-                                        <div className="flex justify-between"><span>Clicks:</span> <span className="text-white">{realtimeMetrics.behavior.click_count}</span></div>
-                                        <div className="flex justify-between"><span>Max Scroll:</span> <span className="text-white">{realtimeMetrics.behavior.max_scroll_depth}%</span></div>
-                                        <div className="flex justify-between"><span>Avg Page:</span> <span className="text-white">{realtimeMetrics.behavior.avg_time_per_page.toFixed(0)}s</span></div>
-                                    </div>
-                                </div>
-                                <div className="bg-neutral-900 p-3 rounded border border-neutral-800 space-y-2">
-                                    <h5 className="text-neutral-500 font-bold flex items-center gap-2"><ShoppingCart className="w-3 h-3"/> E-com / Calc</h5>
-                                    <div className="space-y-1 text-neutral-300">
-                                        <div className="flex justify-between"><span>Products:</span> <span className="text-white">{realtimeMetrics.ecommerce.viewed_product_count}</span></div>
-                                        <div className="flex justify-between"><span>Scroll Speed:</span> <span className="text-white">{realtimeMetrics.calculated.scroll_speed.toFixed(0)}px/s</span></div>
-                                        <div className="flex justify-between"><span>Idle Ratio:</span> <span className="text-white">{realtimeMetrics.calculated.idle_time_ratio}</span></div>
-                                        <div className="flex justify-between"><span>Saved:</span> <span className={realtimeMetrics._internal.total_seconds >= 30 ? "text-green-500" : "text-red-500"}>{realtimeMetrics._internal.total_seconds >= 30 ? 'YES' : 'NO (<30s)'}</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center text-neutral-500 py-4">Waiting for tracker data...</div>
-                        )}
-                        
-                        {realtimeMetrics && (
-                            <div className="mt-4 pt-4 border-t border-neutral-800">
-                                <h5 className="text-[10px] uppercase font-bold text-neutral-600 mb-2">History (Last Pages)</h5>
-                                <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-hide">
-                                    {realtimeMetrics._internal.page_history.slice().reverse().map((p, i) => (
-                                        <div key={i} className="flex justify-between text-[10px] text-neutral-400">
-                                            <span className="truncate w-2/3">{p.path}</span>
-                                            <span className="text-neutral-600">{p.timeOnPage > 0 ? p.timeOnPage.toFixed(1) + 's' : 'Active'}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
-        </div>
-        
-        <div className="p-4 border-t border-neutral-800 bg-neutral-900 flex justify-end shrink-0">
-            <button onClick={onClose} className="w-full md:w-auto px-6 py-3 md:py-2 bg-white text-neutral-900 rounded-lg hover:bg-gray-200 transition-colors font-medium shadow-lg">
-                Готово
-            </button>
         </div>
       </div>
     </div>

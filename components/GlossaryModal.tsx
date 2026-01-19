@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { DictionaryEntry } from '../types';
@@ -12,9 +11,8 @@ interface GlossaryModalProps {
 }
 
 const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictionary, lang = 'ru', t }) => {
-  if (!isOpen) return null;
-
   // Группируем слова по первой букве
+  // Must be called before early return
   const groupedDictionary = useMemo(() => {
     const groups: { [key: string]: DictionaryEntry[] } = {};
     
@@ -42,6 +40,8 @@ const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, dictiona
   }, [dictionary, lang]);
 
   const sortedKeys = Object.keys(groupedDictionary).sort();
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden">

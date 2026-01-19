@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings, HelpCircle, Loader2, Menu, X, Book, FileText, ArrowRight, LogOut, User as UserIcon, ShoppingBag, Lock, Globe, GraduationCap } from 'lucide-react';
-import { INITIAL_LESSONS, INITIAL_DICTIONARY, INITIAL_ARTICLES, INITIAL_PRODUCTS, INITIAL_COURSES, UI_TRANSLATIONS } from './constants';
-import { Lesson, DictionaryEntry, Article, UserProfile, Product, CartItem, Course } from './types';
+import { Settings, HelpCircle, Loader2, Menu, X, Book, FileText, ArrowRight, LogOut, User as UserIcon, ShoppingBag, Lock, Globe, GraduationCap, FolderOpen } from 'lucide-react';
+import { INITIAL_LESSONS, INITIAL_DICTIONARY, INITIAL_ARTICLES, INITIAL_PRODUCTS, INITIAL_COURSES, UI_TRANSLATIONS, INITIAL_CATALOG_CATEGORIES, INITIAL_CATALOG_VIDEOS } from './constants';
+import { Lesson, DictionaryEntry, Article, UserProfile, Product, CartItem, Course, CatalogCategory, CatalogVideo } from './types';
 import VideoPlayer from './components/VideoPlayer';
 import TextContent from './components/TextContent';
 import SettingsModal from './components/SettingsModal';
@@ -11,6 +11,7 @@ import ArticlesModal from './components/ArticlesModal';
 import ArticleReader from './components/ArticleReader';
 import MarketplaceModal from './components/MarketplaceModal';
 import CoursesModal from './components/CoursesModal';
+import CatalogModal from './components/CatalogModal';
 import CartDrawer from './components/CartDrawer';
 import AuthOverlay from './components/AuthOverlay';
 import BehaviorTracker from './utils/BehaviorTracker';
@@ -43,6 +44,10 @@ const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
   
+  // Catalog Data State
+  const [catalogVideos, setCatalogVideos] = useState<CatalogVideo[]>(INITIAL_CATALOG_VIDEOS);
+  const [catalogCategories, setCatalogCategories] = useState<CatalogCategory[]>(INITIAL_CATALOG_CATEGORIES);
+
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -53,6 +58,7 @@ const App: React.FC = () => {
   const [isArticlesOpen, setIsArticlesOpen] = useState(false);
   const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(false);
   const [isCoursesOpen, setIsCoursesOpen] = useState(false);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); 
@@ -106,12 +112,14 @@ const App: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (!supabase) return;
     try {
-      const [lessonsResult, dictResult, articlesResult, productsResult, coursesResult] = await Promise.allSettled([
+      const [lessonsResult, dictResult, articlesResult, productsResult, coursesResult, catVidResult, catCatResult] = await Promise.allSettled([
           supabase.from('lessons').select('*').order('id', { ascending: true }),
           supabase.from('dictionary').select('*').order('term', { ascending: true }),
           supabase.from('letter_shibari').select('*').order('id', { ascending: true }),
           supabase.from('market_shibari').select('*').order('created_at', { ascending: false }),
-          supabase.from('kurs_market_shibari').select('*').order('created_at', { ascending: false })
+          supabase.from('kurs_market_shibari').select('*').order('created_at', { ascending: false }),
+          supabase.from('catalog_videos_shibari').select('*').order('id', { ascending: true }),
+          supabase.from('catalog_categories_shibari').select('*').order('id', { ascending: true })
       ]);
 
       if (articlesResult.status === 'fulfilled' && articlesResult.value.data) {
@@ -148,6 +156,14 @@ const App: React.FC = () => {
       if (coursesResult.status === 'fulfilled' && coursesResult.value.data) {
         setCourses(coursesResult.value.data);
       }
+
+      if (catVidResult.status === 'fulfilled' && catVidResult.value.data) {
+          setCatalogVideos(catVidResult.value.data);
+      }
+      if (catCatResult.status === 'fulfilled' && catCatResult.value.data) {
+          setCatalogCategories(catCatResult.value.data);
+      }
+
     } catch (error) { console.error("Silent fetch error:", error); }
   }, []);
 
@@ -207,6 +223,11 @@ const App: React.FC = () => {
     BehaviorTracker.trackPageView('/courses');
   };
 
+  const handleOpenCatalog = () => {
+    setIsCatalogOpen(true);
+    BehaviorTracker.trackPageView('/catalog');
+  };
+
   // --- Derived Data ---
   const currentLesson = lessons.find(l => l.id === activeLessonId) || lessons[0];
   let relatedArticlesData = currentLesson?.relatedArticles
@@ -224,7 +245,7 @@ const App: React.FC = () => {
 
   if (authLoading) return <div className="flex flex-col h-screen w-screen bg-neutral-950 items-center justify-center text-white"><Loader2 className="w-8 h-8 text-red-600 animate-spin mb-4" /></div>;
   
-  const NavContent = () => (
+  const renderNavContent = () => (
     <>
       <div className="p-6 border-b border-neutral-900 flex items-center gap-4 shrink-0">
          <div className="w-10 h-10 md:w-14 md:h-14 shrink-0 overflow-hidden rounded-md">
@@ -309,7 +330,9 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-neutral-950 overflow-hidden selection:bg-red-900 selection:text-white relative">
-      <aside className="hidden lg:flex w-80 bg-black text-neutral-400 flex-col shadow-2xl z-20 shrink-0 border-r border-neutral-900"><NavContent /></aside>
+      <aside className="hidden lg:flex w-80 bg-black text-neutral-400 flex-col shadow-2xl z-20 shrink-0 border-r border-neutral-900">
+          {renderNavContent()}
+      </aside>
       
       {/* Mobile Header */}
       <div className="lg:hidden absolute top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-md border-b border-neutral-800 z-30 flex items-center justify-between px-4">
@@ -321,7 +344,8 @@ const App: React.FC = () => {
           <div className="fixed inset-0 z-50 lg:hidden">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
               <div className="absolute top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-black shadow-2xl border-r border-neutral-800 flex flex-col animate-in slide-in-from-left duration-300">
-                  <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-4 right-4 p-2 text-neutral-500 hover:text-white"><X className="w-6 h-6" /></button><NavContent />
+                  <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-4 right-4 p-2 text-neutral-500 hover:text-white"><X className="w-6 h-6" /></button>
+                  {renderNavContent()}
               </div>
           </div>
       )}
@@ -338,6 +362,7 @@ const App: React.FC = () => {
                         <button className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest border-b-2 border-transparent hover:border-red-600/50">{t.navazu}</button>
                         <button onClick={handleOpenMarketplace} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><ShoppingBag className="w-4 h-4 md:hidden" />{t.shop}</button>
                         <button onClick={handleOpenCourses} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><GraduationCap className="w-4 h-4 md:hidden" />{t.courses}</button>
+                        <button onClick={handleOpenCatalog} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><FolderOpen className="w-4 h-4 md:hidden" />{t.catalog || "Каталог"}</button>
                     </div>
 
                     {/* Lesson Header */}
@@ -395,6 +420,14 @@ const App: React.FC = () => {
         t={t}
         getData={getData}
       />
+      <CatalogModal
+        isOpen={isCatalogOpen}
+        onClose={() => setIsCatalogOpen(false)}
+        categories={catalogCategories}
+        videos={catalogVideos}
+        lang={lang}
+        t={t}
+      />
       <CartDrawer 
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -422,6 +455,8 @@ const App: React.FC = () => {
             lessons={lessons}
             dictionary={dictionary}
             articles={articles}
+            catalogCategories={catalogCategories}
+            catalogVideos={catalogVideos}
             onUpdateLesson={() => {}}
             onAddLesson={() => {}}
             onRemoveLesson={() => {}}
