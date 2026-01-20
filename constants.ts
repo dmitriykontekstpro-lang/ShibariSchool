@@ -1,11 +1,58 @@
 
 
-import { Lesson, DictionaryEntry, Article, Product, Course, CatalogCategory, CatalogVideo } from './types';
+
+
+
+
+
+
+import { Lesson, DictionaryEntry, Article, Product, Course, CatalogCategory, CatalogVideo, HistoryEvent } from './types';
 
 // EmailJS Default Configuration (Used for initialization)
 export const DEFAULT_EMAILJS_PUBLIC_KEY = 'o38PgmQCq4yaVRdhP';
 export const DEFAULT_EMAILJS_SERVICE_ID = 'service_wsjsyxi';
 export const DEFAULT_EMAILJS_TEMPLATE_ID = 'template_rwv2q7i';
+
+// --- AI Prompts ---
+
+export const AI_TRANSLATION_SYSTEM_PROMPT = `
+### ROLE
+You are an expert Shibari (Japanese rope bondage) instructor and professional translator. You are translating video subtitles for an English-speaking audience. Your voice is authoritative yet gentle, clear, and encouraging—like a mentor teaching a hands-on workshop.
+
+### TASK
+Translate the provided Russian transcript into natural, fluent American English.
+
+### CRITICAL RULES
+1. **Preserve Structure:** Output the EXACT same number of lines/segments as the input. The translation must match the timing of the original speech.
+2. **Phonetic Restoration:** The input text often contains Russian transliterations of English terms (e.g., "тикей" = TK, "сингл колонтайн" = Single Column Tie, "фул тикей" = Full TK). You MUST recognize these phonetic matches and convert them back to the correct English terminology. Never translate "тикей" or "decay" literally if the context implies "TK".
+3. **Natural Flow:** Use contractions ("I'll", "don't", "it's"). Avoid robotic phrasing.
+4. **Anatomy & Safety:**
+   - Use "shift" or "move" for soft tissue (e.g., "shift the breast tissue"), NEVER "displace" or "relocate" (too medical).
+   - Use "Align" for ropes/spine (e.g., "align the binding").
+   - Use "Pecs" or "Pectorals" for muscle; "Breast tissue" for the gland area.
+
+### GLOSSARY (Strict Adherence)
+- **ТК / Тикей / Taka Taka / Дикей** -> TK / Takate Kote
+- **Full TK / Фул тикей** -> Full TK (Never "Full decay")
+- **Обвязка** -> Tie / Binding / Harness
+- **Сингл калантай / Сингл / Колонтайн** -> Single Column Tie
+- **Столб / Стем** -> Column / Stem
+- **Тур** -> Wrap (Upper Wrap / Lower Wrap). *Never "Tour".*
+- **Кануки** -> Kanuki
+- **Складывание рук** -> Arm positioning
+- **По касательной** -> Outwards / Following the natural angle
+- **Микроприхват** -> Skin pinch / Pinching
+- **Стеснительная веревка** -> "Shy rope" concept
+- **Escape узел** -> Escape knot / Safety release
+- **Модель** -> Model / Partner
+
+### STYLE GUIDE EXAMPLES
+- **Input:** "Делаем вот такое движение." -> **Translation:** "Use this motion."
+- **Input:** "Мы вытесняем грудь." -> **Translation:** "We gently shift the breast tissue."
+- **Input:** "Он не тянется." -> **Translation:** "It doesn't budge / It holds firm."
+
+### INPUT DATA
+`;
 
 export const UI_TRANSLATIONS = {
   ru: {
@@ -15,6 +62,8 @@ export const UI_TRANSLATIONS = {
     courses_subtitle: "Обучающие видеопрограммы",
     catalog: "Каталог",
     catalog_subtitle: "Библиотека видео",
+    history: "История",
+    history_subtitle: "Путь искусства Шибари",
     cart: "Корзина",
     articles: "Статьи",
     dictionary: "Словарь",
@@ -64,6 +113,8 @@ export const UI_TRANSLATIONS = {
     courses_subtitle: "Educational video programs",
     catalog: "Catalog",
     catalog_subtitle: "Video Library",
+    history: "History",
+    history_subtitle: "The Path of Shibari Art",
     cart: "Cart",
     articles: "Articles",
     dictionary: "Glossary",
@@ -388,3 +439,60 @@ export const INITIAL_CATALOG_VIDEOS: CatalogVideo[] = [
 ];
 
 export const APP_LOGO_URL = "https://cqpqyhehoiybggjuljzn.supabase.co/storage/v1/object/public/Enot/raccoon_logo.png";
+
+export const INITIAL_HISTORY: HistoryEvent[] = [
+  {
+    id: 1,
+    date_display: "1400-1600",
+    title_ru: "Ходзёдзюцу",
+    title_en: "Hojojutsu",
+    description_ru: "Воинское искусство связывания пленников самураями. Использовалось для конвоирования, допроса и демонстрации статуса пленника.",
+    description_en: "The martial art of restraining prisoners by samurai. Used for transport, interrogation, and displaying the prisoner's status.",
+    image_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Hojojutsu.jpg/440px-Hojojutsu.jpg"
+  },
+  {
+    id: 2,
+    date_display: "1900-1940",
+    title_ru: "Эпоха Ито Сейу",
+    title_en: "Ito Seiu Era",
+    description_ru: "Трансформация из боевого искусства в эротическое. Ито Сейу, 'отец современного кинбаку', популяризирует связывание через провокационные фотографии и истории.",
+    description_en: "Transformation from martial art to erotic form. Ito Seiu, the 'father of modern Kinbaku', popularizes bondage through provocative photography and stories.",
+    image_url: "https://upload.wikimedia.org/wikipedia/commons/2/23/Ito_Seiyu_Binding.jpg"
+  },
+  {
+    id: 3,
+    date_display: "1950s",
+    title_ru: "Нукибори",
+    title_en: "Nukibori",
+    description_ru: "Послевоенная Япония. Расцвет журналов 'Kitan Club'. Популяризация эстетики связывания без подвеса.",
+    description_en: "Post-war Japan. The rise of 'Kitan Club' magazines. Popularization of non-suspension bondage aesthetics.",
+    image_url: ""
+  },
+  {
+    id: 4,
+    date_display: "1970-1990",
+    title_ru: "Новая Волна",
+    title_en: "New Wave Masters",
+    description_ru: "Мастера (Акечи, Нуреки) совершенствуют технику. Появляются сложные геометрические подвесы.",
+    description_en: "Masters like Akechi and Nureki refine the technique. Complex geometric suspensions emerge.",
+    image_url: ""
+  },
+  {
+    id: 5,
+    date_display: "2000s",
+    title_ru: "Глобализация",
+    title_en: "Globalization",
+    description_ru: "Шибари выходит за пределы Японии. Интернет способствует распространению знаний. Появляются школы в Европе и США.",
+    description_en: "Shibari expands beyond Japan. The internet facilitates the spread of knowledge. Schools appear in Europe and the USA.",
+    image_url: ""
+  },
+  {
+    id: 6,
+    date_display: "2024",
+    title_ru: "Современность",
+    title_en: "Modern Era",
+    description_ru: "Шибари как практика осознанности, искусство и соматическая терапия.",
+    description_en: "Shibari as mindfulness, art, and somatic therapy.",
+    image_url: ""
+  }
+];

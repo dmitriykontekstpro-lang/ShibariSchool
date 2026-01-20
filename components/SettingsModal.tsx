@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Save, Video, Type, RefreshCw, Link, PenTool, Users, CheckCircle, XCircle, ChevronDown, Loader2, BarChart, Code, Activity, Eye, Monitor, ShoppingBag, ClipboardList, Package, Calendar, DollarSign, ArrowLeft, GraduationCap, Mail, AlertTriangle, Copy, List, Globe, ShoppingCart, FolderOpen } from 'lucide-react';
-import { DictionaryEntry, Lesson, Article, UserProfile, AppSettings, MetricRule, MetricType, Product, Course, CatalogCategory, CatalogVideo } from '../types';
+import { X, Plus, Trash2, Save, Video, Type, RefreshCw, Link, PenTool, Users, CheckCircle, XCircle, ChevronDown, Loader2, BarChart, Code, Activity, Eye, Monitor, ShoppingBag, ClipboardList, Package, Calendar, DollarSign, ArrowLeft, GraduationCap, Mail, AlertTriangle, Copy, List, Globe, ShoppingCart, FolderOpen, Scroll } from 'lucide-react';
+import { DictionaryEntry, Lesson, Article, UserProfile, AppSettings, MetricRule, MetricType, Product, Course, CatalogCategory, CatalogVideo, HistoryEvent } from '../types';
 import ArticleConstructor from './ArticleConstructor';
 import MarketplaceManager from './MarketplaceManager';
 import CourseManager from './CourseManager';
 import CatalogManager from './CatalogManager';
+import HistoryManager from './HistoryManager';
 import { supabase } from '../supabaseClient';
 import BehaviorTracker, { AdvancedSessionMetrics } from '../utils/BehaviorTracker';
 import { DEFAULT_EMAILJS_PUBLIC_KEY, DEFAULT_EMAILJS_SERVICE_ID, DEFAULT_EMAILJS_TEMPLATE_ID } from '../constants';
@@ -17,6 +19,7 @@ interface SettingsModalProps {
   articles: Article[];
   catalogCategories?: CatalogCategory[];
   catalogVideos?: CatalogVideo[];
+  historyEvents?: HistoryEvent[];
   onUpdateLesson: (id: number, data: Partial<Lesson>) => void;
   onAddLesson: () => void;
   onRemoveLesson: (id: number) => void;
@@ -27,7 +30,6 @@ interface SettingsModalProps {
 }
 
 // ... (Rest of Metric Definitions and Constants remains the same)
-// --- CRM Constants ---
 type ColumnKey = 
   | 'full_name'
   | 'shibari_role'
@@ -85,11 +87,11 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
   isOpen, onClose, lessons, dictionary, articles, 
-  catalogCategories = [], catalogVideos = [],
+  catalogCategories = [], catalogVideos = [], historyEvents = [],
   onUpdateLesson, onAddLesson, onRemoveLesson, 
   onAddWord, onRemoveWord, onResetToDefaults, onArticlesRefresh
 }) => {
-  const [activeTab, setActiveTab] = useState<'video' | 'dict' | 'constructor' | 'users' | 'analytics' | 'behavior' | 'marketplace' | 'courses' | 'catalog'>('video');
+  const [activeTab, setActiveTab] = useState<'video' | 'dict' | 'constructor' | 'users' | 'analytics' | 'behavior' | 'marketplace' | 'courses' | 'catalog' | 'history'>('video');
   const [newTerm, setNewTerm] = useState('');
   const [newDef, setNewDef] = useState('');
 
@@ -466,6 +468,7 @@ where app_settings.emailjs_public_key is null;
       { id: 'video', label: 'Уроки', icon: Video },
       { id: 'courses', label: 'Курсы', icon: GraduationCap },
       { id: 'catalog', label: 'Каталог', icon: FolderOpen },
+      { id: 'history', label: 'История', icon: Scroll },
       { id: 'marketplace', label: 'Магазин', icon: ShoppingBag },
       { id: 'dict', label: 'Словарь', icon: Type },
       { id: 'constructor', label: 'Конструктор', icon: PenTool },
@@ -564,6 +567,8 @@ where app_settings.emailjs_public_key is null;
                     onSave={() => { onArticlesRefresh(); }} 
                 />
             )}
+
+            {activeTab === 'history' && <HistoryManager events={historyEvents} onSave={() => { onArticlesRefresh(); }} />}
 
             {activeTab === 'marketplace' && <MarketplaceManager products={products} onSave={() => { fetchProducts(); onArticlesRefresh(); }} />}
 

@@ -1,4 +1,6 @@
 
+
+
 export interface DictionaryEntry {
   term: string;
   definition: string;
@@ -53,6 +55,19 @@ export interface Lesson {
 export enum TabView {
   LESSONS = 'LESSONS',
   SETTINGS = 'SETTINGS'
+}
+
+// --- History Types ---
+
+export interface HistoryEvent {
+  id: number;
+  date_display: string; // "1400-1600", "1905", etc.
+  title_ru: string;
+  title_en: string;
+  description_ru: string;
+  description_en: string;
+  image_url?: string;
+  created_at?: string;
 }
 
 // --- Marketplace Types ---

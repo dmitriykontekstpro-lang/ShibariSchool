@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings, HelpCircle, Loader2, Menu, X, Book, FileText, ArrowRight, LogOut, User as UserIcon, ShoppingBag, Lock, Globe, GraduationCap, FolderOpen } from 'lucide-react';
-import { INITIAL_LESSONS, INITIAL_DICTIONARY, INITIAL_ARTICLES, INITIAL_PRODUCTS, INITIAL_COURSES, UI_TRANSLATIONS, INITIAL_CATALOG_CATEGORIES, INITIAL_CATALOG_VIDEOS } from './constants';
-import { Lesson, DictionaryEntry, Article, UserProfile, Product, CartItem, Course, CatalogCategory, CatalogVideo } from './types';
+import { Settings, HelpCircle, Loader2, Menu, X, Book, FileText, ArrowRight, LogOut, User as UserIcon, ShoppingBag, Lock, Globe, GraduationCap, FolderOpen, Scroll } from 'lucide-react';
+import { INITIAL_LESSONS, INITIAL_DICTIONARY, INITIAL_ARTICLES, INITIAL_PRODUCTS, INITIAL_COURSES, UI_TRANSLATIONS, INITIAL_CATALOG_CATEGORIES, INITIAL_CATALOG_VIDEOS, INITIAL_HISTORY } from './constants';
+import { Lesson, DictionaryEntry, Article, UserProfile, Product, CartItem, Course, CatalogCategory, CatalogVideo, HistoryEvent } from './types';
 import VideoPlayer from './components/VideoPlayer';
 import TextContent from './components/TextContent';
 import SettingsModal from './components/SettingsModal';
@@ -12,6 +13,7 @@ import ArticleReader from './components/ArticleReader';
 import MarketplaceModal from './components/MarketplaceModal';
 import CoursesModal from './components/CoursesModal';
 import CatalogModal from './components/CatalogModal';
+import HistoryModal from './components/HistoryModal';
 import CartDrawer from './components/CartDrawer';
 import AuthOverlay from './components/AuthOverlay';
 import BehaviorTracker from './utils/BehaviorTracker';
@@ -48,6 +50,9 @@ const App: React.FC = () => {
   const [catalogVideos, setCatalogVideos] = useState<CatalogVideo[]>(INITIAL_CATALOG_VIDEOS);
   const [catalogCategories, setCatalogCategories] = useState<CatalogCategory[]>(INITIAL_CATALOG_CATEGORIES);
 
+  // History State
+  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>(INITIAL_HISTORY);
+
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -59,6 +64,7 @@ const App: React.FC = () => {
   const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(false);
   const [isCoursesOpen, setIsCoursesOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); 
@@ -112,14 +118,15 @@ const App: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (!supabase) return;
     try {
-      const [lessonsResult, dictResult, articlesResult, productsResult, coursesResult, catVidResult, catCatResult] = await Promise.allSettled([
+      const [lessonsResult, dictResult, articlesResult, productsResult, coursesResult, catVidResult, catCatResult, historyResult] = await Promise.allSettled([
           supabase.from('lessons').select('*').order('id', { ascending: true }),
           supabase.from('dictionary').select('*').order('term', { ascending: true }),
           supabase.from('letter_shibari').select('*').order('id', { ascending: true }),
           supabase.from('market_shibari').select('*').order('created_at', { ascending: false }),
           supabase.from('kurs_market_shibari').select('*').order('created_at', { ascending: false }),
           supabase.from('catalog_videos_shibari').select('*').order('id', { ascending: true }),
-          supabase.from('catalog_categories_shibari').select('*').order('id', { ascending: true })
+          supabase.from('catalog_categories_shibari').select('*').order('id', { ascending: true }),
+          supabase.from('history_shibari').select('*').order('id', { ascending: true })
       ]);
 
       if (articlesResult.status === 'fulfilled' && articlesResult.value.data) {
@@ -162,6 +169,10 @@ const App: React.FC = () => {
       }
       if (catCatResult.status === 'fulfilled' && catCatResult.value.data) {
           setCatalogCategories(catCatResult.value.data);
+      }
+      
+      if (historyResult.status === 'fulfilled' && historyResult.value.data) {
+          setHistoryEvents(historyResult.value.data);
       }
 
     } catch (error) { console.error("Silent fetch error:", error); }
@@ -226,6 +237,11 @@ const App: React.FC = () => {
   const handleOpenCatalog = () => {
     setIsCatalogOpen(true);
     BehaviorTracker.trackPageView('/catalog');
+  };
+
+  const handleOpenHistory = () => {
+    setIsHistoryOpen(true);
+    BehaviorTracker.trackPageView('/history');
   };
 
   // --- Derived Data ---
@@ -363,6 +379,7 @@ const App: React.FC = () => {
                         <button onClick={handleOpenMarketplace} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><ShoppingBag className="w-4 h-4 md:hidden" />{t.shop}</button>
                         <button onClick={handleOpenCourses} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><GraduationCap className="w-4 h-4 md:hidden" />{t.courses}</button>
                         <button onClick={handleOpenCatalog} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><FolderOpen className="w-4 h-4 md:hidden" />{t.catalog || "Каталог"}</button>
+                        <button onClick={handleOpenHistory} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><Scroll className="w-4 h-4 md:hidden" />{t.history || "История"}</button>
                     </div>
 
                     {/* Lesson Header */}
@@ -428,6 +445,13 @@ const App: React.FC = () => {
         lang={lang}
         t={t}
       />
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        events={historyEvents}
+        lang={lang}
+        t={t}
+      />
       <CartDrawer 
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -457,6 +481,7 @@ const App: React.FC = () => {
             articles={articles}
             catalogCategories={catalogCategories}
             catalogVideos={catalogVideos}
+            historyEvents={historyEvents}
             onUpdateLesson={() => {}}
             onAddLesson={() => {}}
             onRemoveLesson={() => {}}

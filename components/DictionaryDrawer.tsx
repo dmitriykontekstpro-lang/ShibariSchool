@@ -13,23 +13,27 @@ interface DictionaryDrawerProps {
 
 const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, onClose, lang = 'ru', t }) => {
   const [definition, setDefinition] = useState<string | null>(null);
+  const [displayTerm, setDisplayTerm] = useState<string | null>(null);
 
   useEffect(() => {
     if (term) {
       // Try to find by english term OR russian term
       const entry = dictionary.find(d => 
-        (d.term.toLowerCase() === term.toLowerCase()) || 
+        (d.term && d.term.toLowerCase() === term.toLowerCase()) || 
         (d.term_en && d.term_en.toLowerCase() === term.toLowerCase())
       );
 
       if (entry) {
           if (lang === 'en') {
               setDefinition(entry.definition_en || entry.definition);
+              setDisplayTerm(entry.term_en || entry.term);
           } else {
               setDefinition(entry.definition);
+              setDisplayTerm(entry.term);
           }
       } else {
           setDefinition(lang === 'en' ? 'Definition not found.' : 'Определение не найдено.');
+          setDisplayTerm(term);
       }
     }
   }, [term, dictionary, lang]);
@@ -60,7 +64,7 @@ const DictionaryDrawer: React.FC<DictionaryDrawerProps> = ({ term, dictionary, o
             <span className="inline-block px-3 py-1 bg-red-900/30 text-red-400 text-xs font-bold tracking-wide uppercase rounded-full mb-3">
               Term
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-6 break-words">{term}</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-6 break-words">{displayTerm || term}</h2>
             
             <span className="inline-block px-3 py-1 bg-neutral-800 text-neutral-400 text-xs font-bold tracking-wide uppercase rounded-full mb-3">
               Definition
