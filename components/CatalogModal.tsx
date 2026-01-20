@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { X, Play, FolderOpen, ChevronDown, Check, Filter } from 'lucide-react';
 import { CatalogCategory, CatalogVideo } from '../types';
@@ -232,7 +233,7 @@ const CatalogModal: React.FC<CatalogModalProps> = ({
                      <button onClick={clearAllFilters} className="mt-4 text-red-500 text-sm hover:underline">Сбросить фильтры</button>
                  </div>
              ) : (
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12">
                      {filteredVideos.map(video => (
                          <div 
                             key={video.id} 
@@ -243,22 +244,16 @@ const CatalogModal: React.FC<CatalogModalProps> = ({
                              <div className="aspect-video w-full bg-neutral-900 relative overflow-hidden rounded-lg border border-white/5 group-hover:border-red-600/50 transition-colors">
                                  {/* Use VideoPlayer strictly for thumbnail facade generation */}
                                  <div className="w-full h-full pointer-events-none group-hover:scale-105 transition-transform duration-500">
-                                     <VideoPlayer url={video.video_url} /> 
-                                 </div>
-                                 {/* Hover Overlay */}
-                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                     <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
-                                         <Play className="w-4 h-4 text-white fill-white ml-0.5" />
-                                     </div>
+                                     <VideoPlayer url={video.video_url} showPlayButton={false} /> 
                                  </div>
                              </div>
                              
                              {/* Content Below */}
-                             <div className="pt-3">
-                                 <h3 className="text-sm font-bold text-white leading-tight mb-1 group-hover:text-red-500 transition-colors line-clamp-2">
+                             <div className="pt-4">
+                                 <h3 className="text-base md:text-lg font-bold text-white leading-snug mb-2 group-hover:text-red-500 transition-colors line-clamp-2">
                                      {video.title}
                                  </h3>
-                                 <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed">
+                                 <p className="text-sm text-neutral-500 line-clamp-2 leading-relaxed">
                                      {video.description}
                                  </p>
                              </div>

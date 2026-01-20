@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings, HelpCircle, Loader2, Menu, X, Book, FileText, ArrowRight, LogOut, User as UserIcon, ShoppingBag, Lock, Globe, GraduationCap, FolderOpen, Scroll } from 'lucide-react';
-import { INITIAL_LESSONS, INITIAL_DICTIONARY, INITIAL_ARTICLES, INITIAL_PRODUCTS, INITIAL_COURSES, UI_TRANSLATIONS, INITIAL_CATALOG_CATEGORIES, INITIAL_CATALOG_VIDEOS, INITIAL_HISTORY } from './constants';
-import { Lesson, DictionaryEntry, Article, UserProfile, Product, CartItem, Course, CatalogCategory, CatalogVideo, HistoryEvent } from './types';
+import { Settings, HelpCircle, Loader2, Menu, X, Book, FileText, ArrowRight, LogOut, User as UserIcon, ShoppingBag, Lock, Globe, GraduationCap, FolderOpen, Scroll, Network, Calendar } from 'lucide-react';
+import { INITIAL_LESSONS, INITIAL_DICTIONARY, INITIAL_ARTICLES, INITIAL_PRODUCTS, INITIAL_COURSES, UI_TRANSLATIONS, INITIAL_CATALOG_CATEGORIES, INITIAL_CATALOG_VIDEOS, INITIAL_HISTORY, INITIAL_EVENTS } from './constants';
+import { Lesson, DictionaryEntry, Article, UserProfile, Product, CartItem, Course, CatalogCategory, CatalogVideo, HistoryEvent, AppEvent } from './types';
 import VideoPlayer from './components/VideoPlayer';
 import TextContent from './components/TextContent';
 import SettingsModal from './components/SettingsModal';
@@ -14,10 +14,25 @@ import MarketplaceModal from './components/MarketplaceModal';
 import CoursesModal from './components/CoursesModal';
 import CatalogModal from './components/CatalogModal';
 import HistoryModal from './components/HistoryModal';
+import KinbakushiModal from './components/KinbakushiModal';
+import EventsModal from './components/EventsModal';
 import CartDrawer from './components/CartDrawer';
 import AuthOverlay from './components/AuthOverlay';
 import BehaviorTracker from './utils/BehaviorTracker';
 import { supabase } from './supabaseClient';
+
+// Helper to sort history events by year (oldest first)
+const sortHistoryEvents = (events: HistoryEvent[]) => {
+  return [...events].sort((a, b) => {
+    const getYear = (str: string) => {
+      // Extract first sequence of 3 or 4 digits (e.g. "1400" from "1400-1600")
+      const match = (str || '').match(/\d{3,4}/);
+      // If no date found, treat as very old (0)
+      return match ? parseInt(match[0], 10) : 0;
+    };
+    return getYear(a.date_display) - getYear(b.date_display);
+  });
+};
 
 const App: React.FC = () => {
   // Localization State
@@ -50,8 +65,11 @@ const App: React.FC = () => {
   const [catalogVideos, setCatalogVideos] = useState<CatalogVideo[]>(INITIAL_CATALOG_VIDEOS);
   const [catalogCategories, setCatalogCategories] = useState<CatalogCategory[]>(INITIAL_CATALOG_CATEGORIES);
 
-  // History State
-  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>(INITIAL_HISTORY);
+  // History State (Sorted initially)
+  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>(sortHistoryEvents(INITIAL_HISTORY));
+  
+  // Events State
+  const [events, setEvents] = useState<AppEvent[]>(INITIAL_EVENTS);
 
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -65,6 +83,8 @@ const App: React.FC = () => {
   const [isCoursesOpen, setIsCoursesOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isKinbakushiOpen, setIsKinbakushiOpen] = useState(false);
+  const [isEventsOpen, setIsEventsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); 
@@ -118,7 +138,7 @@ const App: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (!supabase) return;
     try {
-      const [lessonsResult, dictResult, articlesResult, productsResult, coursesResult, catVidResult, catCatResult, historyResult] = await Promise.allSettled([
+      const [lessonsResult, dictResult, articlesResult, productsResult, coursesResult, catVidResult, catCatResult, historyResult, eventsResult] = await Promise.allSettled([
           supabase.from('lessons').select('*').order('id', { ascending: true }),
           supabase.from('dictionary').select('*').order('term', { ascending: true }),
           supabase.from('letter_shibari').select('*').order('id', { ascending: true }),
@@ -126,7 +146,8 @@ const App: React.FC = () => {
           supabase.from('kurs_market_shibari').select('*').order('created_at', { ascending: false }),
           supabase.from('catalog_videos_shibari').select('*').order('id', { ascending: true }),
           supabase.from('catalog_categories_shibari').select('*').order('id', { ascending: true }),
-          supabase.from('history_shibari').select('*').order('id', { ascending: true })
+          supabase.from('history_shibari').select('*'),
+          supabase.from('event_shibari').select('*').order('date', { ascending: true })
       ]);
 
       if (articlesResult.status === 'fulfilled' && articlesResult.value.data) {
@@ -172,7 +193,11 @@ const App: React.FC = () => {
       }
       
       if (historyResult.status === 'fulfilled' && historyResult.value.data) {
-          setHistoryEvents(historyResult.value.data);
+          setHistoryEvents(sortHistoryEvents(historyResult.value.data));
+      }
+      
+      if (eventsResult.status === 'fulfilled' && eventsResult.value.data) {
+          setEvents(eventsResult.value.data);
       }
 
     } catch (error) { console.error("Silent fetch error:", error); }
@@ -242,6 +267,16 @@ const App: React.FC = () => {
   const handleOpenHistory = () => {
     setIsHistoryOpen(true);
     BehaviorTracker.trackPageView('/history');
+  };
+
+  const handleOpenKinbakushi = () => {
+    setIsKinbakushiOpen(true);
+    BehaviorTracker.trackPageView('/kinbakushi');
+  };
+  
+  const handleOpenEvents = () => {
+      setIsEventsOpen(true);
+      BehaviorTracker.trackPageView('/events');
   };
 
   // --- Derived Data ---
@@ -371,15 +406,16 @@ const App: React.FC = () => {
         <div className="flex-1 overflow-y-auto scroll-smooth">
             {currentLesson ? (
                 <div className="max-w-5xl mx-auto p-4 md:p-8 lg:p-12 pb-32">
-                    {/* Tabs */}
-                    <div className="flex items-center gap-2 md:gap-4 mb-8 border-b border-neutral-800 pb-2 overflow-x-auto scrollbar-hide">
-                        <button onClick={() => setIsArticlesOpen(true)} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><FileText className="w-4 h-4 md:hidden" />{t.articles}</button>
-                        <button onClick={handleOpenDictionary} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><Book className="w-4 h-4 md:hidden" />{t.dictionary}</button>
-                        <button className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest border-b-2 border-transparent hover:border-red-600/50">{t.navazu}</button>
-                        <button onClick={handleOpenMarketplace} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><ShoppingBag className="w-4 h-4 md:hidden" />{t.shop}</button>
-                        <button onClick={handleOpenCourses} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><GraduationCap className="w-4 h-4 md:hidden" />{t.courses}</button>
-                        <button onClick={handleOpenCatalog} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><FolderOpen className="w-4 h-4 md:hidden" />{t.catalog || "Каталог"}</button>
-                        <button onClick={handleOpenHistory} className="text-neutral-300 hover:text-white hover:bg-neutral-900 px-4 py-2 rounded-t-md transition-all text-xs md:text-sm font-bold uppercase tracking-widest flex items-center gap-2 border-b-2 border-transparent hover:border-red-600/50"><Scroll className="w-4 h-4 md:hidden" />{t.history || "История"}</button>
+                    {/* Tabs (Compressed) */}
+                    <div className="flex items-center justify-between gap-0.5 md:gap-2 mb-8 border-b border-neutral-800 pb-0 w-full overflow-hidden">
+                        <button onClick={() => setIsArticlesOpen(true)} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.articles}</button>
+                        <button onClick={handleOpenDictionary} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.dictionary}</button>
+                        <button onClick={handleOpenEvents} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.events || "Афиша"}</button>
+                        <button onClick={handleOpenMarketplace} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.shop}</button>
+                        <button onClick={handleOpenCourses} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.courses}</button>
+                        <button onClick={handleOpenCatalog} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.catalog || "Каталог"}</button>
+                        <button onClick={handleOpenHistory} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.history || "История"}</button>
+                        <button onClick={handleOpenKinbakushi} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.kinbakushi || "Мастера"}</button>
                     </div>
 
                     {/* Lesson Header */}
@@ -452,6 +488,19 @@ const App: React.FC = () => {
         lang={lang}
         t={t}
       />
+      <EventsModal
+        isOpen={isEventsOpen}
+        onClose={() => setIsEventsOpen(false)}
+        events={events}
+        lang={lang}
+        t={t}
+      />
+      <KinbakushiModal
+        isOpen={isKinbakushiOpen}
+        onClose={() => setIsKinbakushiOpen(false)}
+        lang={lang}
+        t={t}
+      />
       <CartDrawer 
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -482,6 +531,7 @@ const App: React.FC = () => {
             catalogCategories={catalogCategories}
             catalogVideos={catalogVideos}
             historyEvents={historyEvents}
+            events={events}
             onUpdateLesson={() => {}}
             onAddLesson={() => {}}
             onRemoveLesson={() => {}}

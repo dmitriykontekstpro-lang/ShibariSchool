@@ -41,8 +41,8 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
       <div className="flex-1 overflow-y-auto bg-neutral-950 p-4 md:p-12 relative">
           <div className="max-w-7xl mx-auto relative pb-20">
               
-              {/* Vertical Line - Moved to 20% (First Quarter) on Desktop */}
-              <div className="absolute left-[20px] md:left-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-red-900/50 to-transparent md:-ml-px"></div>
+              {/* Vertical Line - Solid and continuous */}
+              <div className="absolute left-[20px] md:left-[20%] top-0 bottom-0 w-px bg-neutral-800 md:-ml-px"></div>
 
               {events.length === 0 ? (
                   <div className="text-center text-neutral-500 py-20">

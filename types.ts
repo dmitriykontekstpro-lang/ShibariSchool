@@ -1,6 +1,4 @@
 
-
-
 export interface DictionaryEntry {
   term: string;
   definition: string;
@@ -55,6 +53,21 @@ export interface Lesson {
 export enum TabView {
   LESSONS = 'LESSONS',
   SETTINGS = 'SETTINGS'
+}
+
+// --- Events / Poster Types ---
+
+export interface AppEvent {
+  id: number;
+  title: string;
+  description?: string;
+  date: string; // ISO string or specific date format
+  time?: string;
+  location: string;
+  image_url?: string;
+  price?: string; // String to allow "Free", "100$", etc.
+  registration_url?: string;
+  created_at?: string;
 }
 
 // --- History Types ---
@@ -235,4 +248,30 @@ export interface AppSettings {
   emailjs_service_id?: string;
   emailjs_template_id?: string;
   emailjs_public_key?: string;
+}
+
+// --- Kinbakushi Types ---
+
+export interface KinbakushiNode {
+  id: string;
+  label: string;
+  type?: 'concept' | 'era_context' | 'work' | 'magazine' | 'group' | 'genre/studio' | 'person' | 'place';
+  era?: string;
+  dates?: string;
+  role?: string;
+  date?: string;
+  author?: string;
+  publication?: string;
+  icon?: string;
+  category?: string; // 'Fundamental work', 'Book/Film' etc
+  notes?: string;
+  x: number; // Coordinates for canvas
+  y: number;
+}
+
+export interface KinbakushiEdge {
+  source: string;
+  target: string;
+  type: 'direct_relationship' | 'important_influence' | 'work_published';
+  label?: string; // e.g. "Ichiban Deshi"
 }

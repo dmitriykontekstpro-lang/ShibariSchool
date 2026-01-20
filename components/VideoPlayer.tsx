@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Play, Loader2 } from 'lucide-react';
 
 interface VideoPlayerProps {
   url: string;
+  showPlayButton?: boolean;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ url }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, showPlayButton = true }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -77,13 +79,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url }) => {
           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300" />
 
           {/* Кнопка Play */}
-          <div className="absolute z-10 w-16 h-16 sm:w-20 sm:h-20 bg-red-600/90 rounded-full flex items-center justify-center backdrop-blur-sm shadow-[0_0_30px_rgba(220,38,38,0.5)] group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
-             <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white fill-white ml-1" />
-          </div>
+          {showPlayButton && (
+            <div className="absolute z-10 w-16 h-16 sm:w-20 sm:h-20 bg-red-600/90 rounded-full flex items-center justify-center backdrop-blur-sm shadow-[0_0_30px_rgba(220,38,38,0.5)] group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
+               <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white fill-white ml-1" />
+            </div>
+          )}
           
-          <div className="absolute bottom-6 text-white font-medium text-sm tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
-             Нажмите для просмотра
-          </div>
+          {showPlayButton && (
+            <div className="absolute bottom-6 text-white font-medium text-sm tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+               Нажмите для просмотра
+            </div>
+          )}
         </button>
       ) : (
         // РЕЖИМ IFRAME (Загружается только после клика)

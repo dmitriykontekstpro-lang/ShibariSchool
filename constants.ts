@@ -1,12 +1,5 @@
 
-
-
-
-
-
-
-
-import { Lesson, DictionaryEntry, Article, Product, Course, CatalogCategory, CatalogVideo, HistoryEvent } from './types';
+import { Lesson, DictionaryEntry, Article, Product, Course, CatalogCategory, CatalogVideo, HistoryEvent, KinbakushiNode, KinbakushiEdge, AppEvent } from './types';
 
 // EmailJS Default Configuration (Used for initialization)
 export const DEFAULT_EMAILJS_PUBLIC_KEY = 'o38PgmQCq4yaVRdhP';
@@ -64,10 +57,15 @@ export const UI_TRANSLATIONS = {
     catalog_subtitle: "Библиотека видео",
     history: "История",
     history_subtitle: "Путь искусства Шибари",
+    kinbakushi: "Мастера",
+    kinbakushi_subtitle: "Генеалогия (Influential Bakushis)",
+    kinbakushi_controls: "Зум колесиком, перемещение драгом",
     cart: "Корзина",
     articles: "Статьи",
     dictionary: "Словарь",
-    navazu: "Навадзу",
+    navazu: "Навадзу", // Legacy fallback
+    events: "Афиша",
+    events_subtitle: "Мероприятия и Воркшопы",
     login: "Войти",
     logout: "Выйти",
     register: "Регистрация",
@@ -104,7 +102,11 @@ export const UI_TRANSLATIONS = {
     continue_shopping: "Продолжить покупки",
     invalid_credentials: "Неверный email или пароль. Если вы только что зарегистрировались, проверьте почту для подтверждения аккаунта.",
     auth_error: "Ошибка авторизации",
-    account_created: "Аккаунт создан! Проверьте почту для подтверждения."
+    account_created: "Аккаунт создан! Проверьте почту для подтверждения.",
+    event_location: "Место проведения",
+    event_date: "Дата и время",
+    event_price: "Стоимость",
+    register_event: "Записаться"
   },
   en: {
     shop: "Shop",
@@ -115,10 +117,15 @@ export const UI_TRANSLATIONS = {
     catalog_subtitle: "Video Library",
     history: "History",
     history_subtitle: "The Path of Shibari Art",
+    kinbakushi: "Masters",
+    kinbakushi_subtitle: "Influential Bakushis Graph",
+    kinbakushi_controls: "Scroll to zoom, Drag to move",
     cart: "Cart",
     articles: "Articles",
     dictionary: "Glossary",
-    navazu: "Nawazu",
+    navazu: "Nawazu", // Legacy fallback
+    events: "Events",
+    events_subtitle: "Workshops & Meetings",
     login: "Sign In",
     logout: "Sign Out",
     register: "Sign Up",
@@ -155,7 +162,11 @@ export const UI_TRANSLATIONS = {
     continue_shopping: "Continue Shopping",
     invalid_credentials: "Invalid email or password. If you just registered, please verify your email.",
     auth_error: "Authentication Error",
-    account_created: "Account created! Check email to verify."
+    account_created: "Account created! Check email to verify.",
+    event_location: "Location",
+    event_date: "Date & Time",
+    event_price: "Price",
+    register_event: "Register"
   }
 };
 
@@ -303,143 +314,34 @@ export const INITIAL_COURSES: Course[] = [
     }
 ];
 
-// --- INITIAL CATALOG DATA ---
-
-export const INITIAL_CATALOG_CATEGORIES: CatalogCategory[] = [
+export const INITIAL_EVENTS: AppEvent[] = [
     {
-        id: 'cat_level',
-        label: 'Уровень',
-        subcategories: [
-            { id: 'lvl_new', label: 'Новичкам' },
-            { id: 'lvl_cont', label: 'Продолжающим' },
-            { id: 'lvl_exp', label: 'Экспертам' },
-            { id: 'lvl_pro', label: 'Профи' }
-        ]
+        id: 1,
+        title: "Веревочный Джем",
+        description: "Открытая практика для всех уровней. Приходите со своими веревками или возьмите в аренду на месте. Чай и печеньки включены.",
+        date: "2024-10-24",
+        time: "19:00",
+        location: "Москва, Студия 'Узел', ул. Ленина 10",
+        image_url: "https://images.unsplash.com/photo-1576615278693-f7253b272714?auto=format&fit=crop&q=80&w=800",
+        price: "500 руб",
+        registration_url: "#"
     },
     {
-        id: 'cat_content',
-        label: 'Содержимое',
-        subcategories: [
-            { id: 'cont_prac', label: 'Практика' },
-            { id: 'cont_theo', label: 'Теория' }
-        ]
-    },
-    {
-        id: 'cat_type',
-        label: 'Тип материала',
-        subcategories: [
-            { id: 'type_lec', label: 'Лекция' },
-            { id: 'type_lab', label: 'Лаб' },
-            { id: 'type_les', label: 'Урок' },
-            { id: 'type_stream', label: 'Стрим' },
-            { id: 'type_broadcast', label: 'Трансляция' }
-        ]
-    },
-    {
-        id: 'cat_length',
-        label: 'Длина',
-        subcategories: [
-            { id: 'len_short', label: 'Короткий' },
-            { id: 'len_med', label: 'Средний' },
-            { id: 'len_long', label: 'Длинный' },
-            { id: 'len_none', label: 'Нет' }
-        ]
-    },
-    {
-        id: 'cat_teacher',
-        label: 'Преподаватель',
-        subcategories: [
-            { id: 'teach_enot', label: 'Енот' },
-            { id: 'teach_maria', label: 'Мария' },
-            { id: 'teach_anna', label: 'Анна' },
-            { id: 'teach_none', label: 'Нет' }
-        ]
-    },
-    {
-        id: 'cat_body',
-        label: 'Часть тела',
-        subcategories: [
-            { id: 'body_arms', label: 'Руки' },
-            { id: 'body_head', label: 'Голова' },
-            { id: 'body_hip', label: 'Бедро' },
-            { id: 'body_foot', label: 'Ступня' },
-            { id: 'body_hand', label: 'Рука' },
-            { id: 'body_torso', label: 'Торс' },
-            { id: 'body_chest', label: 'Грудь' },
-            { id: 'body_mix', label: 'Микс' },
-            { id: 'body_none', label: 'Нет' }
-        ]
-    },
-    {
-        id: 'cat_lesson_type',
-        label: 'Тип урока',
-        subcategories: [
-            { id: 'lt_med', label: 'Медицина' },
-            { id: 'lt_tie', label: 'Обвязка' },
-            { id: 'lt_anat', label: 'Анатомия' },
-            { id: 'lt_cert', label: 'Сертификация' }
-        ]
-    },
-    {
-        id: 'cat_nawazu',
-        label: 'Навадзу',
-        subcategories: [
-            { id: 'naw_1a', label: '1A-ku' },
-            { id: 'naw_1b', label: '1B-ku' },
-            { id: 'naw_2a', label: '2A-ku' },
-            { id: 'naw_2b', label: '2B-ku' },
-            { id: 'naw_none', label: 'Нет' }
-        ]
-    },
-    {
-        id: 'cat_tie_name',
-        label: 'Обвязка',
-        subcategories: [
-            { id: 'tie_futo', label: 'Футомомо' },
-            { id: 'tie_tk', label: 'ТК' },
-            { id: 'tie_agura', label: 'Агура' },
-            { id: 'tie_teppo', label: 'Теппо' },
-            { id: 'tie_none', label: 'Нет' }
-        ]
-    },
-    {
-        id: 'cat_suspension',
-        label: 'Подвесы',
-        subcategories: [
-            { id: 'susp_full', label: 'Подвес' },
-            { id: 'susp_floor', label: 'На полу' },
-            { id: 'susp_part', label: 'Полуподвес' },
-            { id: 'susp_none', label: 'Нет' }
-        ]
+        id: 2,
+        title: "Мастер-класс: Подвесы",
+        description: "Продвинутый воркшоп по технике безопасности в подвесах. Только для пар с опытом.",
+        date: "2024-11-05",
+        time: "12:00",
+        location: "Санкт-Петербург, Лофт Проект",
+        image_url: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800",
+        price: "5000 руб",
+        registration_url: "#"
     }
 ];
 
-export const INITIAL_CATALOG_VIDEOS: CatalogVideo[] = [
-    { 
-        id: 1, 
-        title: 'Прямой узел', 
-        description: 'Основа всех основ.', 
-        video_url: 'https://youtu.be/kIhIR9Kl8ZA', 
-        category_refs: [{ categoryId: 'cat_level', subcategoryId: 'lvl_new' }]
-    },
-    { 
-        id: 2, 
-        title: 'Грудная обвязка', 
-        description: 'Классика.', 
-        video_url: 'https://youtu.be/kIhIR9Kl8ZA', 
-        category_refs: [{ categoryId: 'cat_tie_name', subcategoryId: 'tie_tk' }]
-    },
-    { 
-        id: 3, 
-        title: 'Боковой подвес', 
-        description: 'Техника безопасности.', 
-        video_url: 'https://youtu.be/kIhIR9Kl8ZA', 
-        category_refs: [{ categoryId: 'cat_suspension', subcategoryId: 'susp_part' }]
-    },
-];
-
+export const INITIAL_CATALOG_CATEGORIES: CatalogCategory[] = [];
+export const INITIAL_CATALOG_VIDEOS: CatalogVideo[] = [];
 export const APP_LOGO_URL = "https://cqpqyhehoiybggjuljzn.supabase.co/storage/v1/object/public/Enot/raccoon_logo.png";
-
 export const INITIAL_HISTORY: HistoryEvent[] = [
   {
     id: 1,
@@ -495,4 +397,159 @@ export const INITIAL_HISTORY: HistoryEvent[] = [
     description_en: "Shibari as mindfulness, art, and somatic therapy.",
     image_url: ""
   }
+];
+
+// --- KINBAKUSHI DATA (Derived from JSON) ---
+
+export const INITIAL_KINBAKUSHI_NODES: KinbakushiNode[] = [
+  // --- PRE-1800 / 1800s (Top Layer) ---
+  { id: 'hojojutsu', label: 'Hojōjutsu', type: 'concept', era: 'Pre-1800', x: 200, y: 50 },
+  { id: 'ukiyo_e', label: 'Ukiyo-e / Shunga', type: 'concept', era: 'Pre-1800', x: 500, y: 50 },
+  { id: 'kabuki', label: 'Kabuki', type: 'concept', era: 'Pre-1800', x: 800, y: 50 },
+  { id: 'edo_torture', label: 'Edo Torture', type: 'era_context', era: '1600-1868', x: 350, y: 100 },
+  
+  { id: 'tsukioka_yoshitoshi', label: 'Tsukioka Yoshitoshi', dates: '1839-1892', role: 'Ukiyo-E Master', era: '1800s', x: 500, y: 150 },
+  { id: 'lonely_house', label: 'Lonely House (1885)', date: '1885', type: 'work', category: 'Fundamental work', x: 650, y: 200 },
+
+  // --- 1900s - 1950s (Founders) ---
+  { id: 'seiu_itou', label: 'Seiu Itou', dates: '1882-1961', role: 'Painter, writer', era: '1900s', x: 500, y: 300 },
+  { id: 'seiu_suspension', label: 'Seiu 1919 photo', date: '1919', type: 'work', category: 'Fundamental work', x: 350, y: 320 },
+  
+  { id: 'nawa_yumio', label: 'Nawa Yumio', dates: '1912-2006', role: 'Martial artist', era: '1950s', x: 300, y: 450 },
+  { id: 'toshiyuki_suma', label: 'Toshiyuki Suma', dates: '1920-1992', role: 'Writer', era: '1950s', x: 700, y: 450 },
+  { id: 'takashi_tsujimura', label: 'Takashi Tsujimura', dates: '1921-1987', era: '1950s', x: 100, y: 450 },
+  
+  { id: 'ten_positions', label: 'Ten positions (1952)', author: 'Reiko Kita', date: '1952', type: 'work', category: 'Fundamental work', x: 850, y: 450 },
+  { id: 'kitan_club', label: 'Kitan Club', dates: '1952-1975', type: 'magazine', era: '1950s', x: 500, y: 400 },
+  { id: 'uramado', label: 'Uramado', dates: '1956-1965', type: 'magazine', era: '1950s', x: 600, y: 500 },
+  { id: 'chimuo_nureki', label: 'Chimuo Nureki', dates: '1930-2013', era: '1950s', x: 500, y: 550 },
+
+  // --- 1970s - 1980s (Golden Age & Media) ---
+  { id: 'oniroku_dan', label: 'Oniroku Dan', dates: '1931-2011', role: 'Writer', era: '1950s-1980s', x: 800, y: 550 },
+  { id: 'hana_to_hebi', label: 'Hana to Hebi', type: 'work', category: 'Book/Film', x: 950, y: 550 },
+  { id: 'oni_pro', label: 'Oni Pro', dates: '1969-1974', type: 'group', era: '1970s', x: 800, y: 650 },
+  { id: 'pink_films', label: 'Pink Films', dates: '1971-1988', type: 'genre/studio', icon: 'film_strip', era: '1970s', x: 950, y: 650 },
+  { id: 'hiroshi_urado', label: 'Hiroshi Urado', dates: '1933', era: '1970s', x: 900, y: 700 },
+  
+  { id: 'eikichi_osada', label: 'Eikichi Osada', dates: '1925-2001', era: '1970s', x: 100, y: 600 },
+  { id: 'hayakawa_yoshikazu', label: 'Hayakawa Yoshikazu', dates: 'b.1949', era: '1970s', x: 250, y: 600 },
+  
+  { id: 'sm_sniper', label: 'S&M Sniper', dates: '1979-2009', type: 'magazine', era: '1980s', x: 200, y: 700 },
+  { id: 'eizo_chiba', label: 'Eizo Chiba', type: 'person', notes: 'Tanbikai', x: 200, y: 500 },
+  
+  { id: 'nobuyoshi_araki', label: 'Nobuyoshi Araki', dates: 'b.1940', role: 'Photographer', era: '1980s', x: 950, y: 800 },
+  { id: 'sakurada_denjiro', label: 'Sakurada Denjiro', dates: 'b.1952', era: '1980s', x: 500, y: 700 },
+  { id: 'theatre_poo', label: 'Theatre Poo', dates: '1983-2019', type: 'place', era: '1980s', x: 600, y: 700 },
+  { id: 'kinbiken', label: 'Kinbiken', dates: '1985-2009', type: 'place', era: '1980s', x: 400, y: 700 },
+  
+  { id: 'masato_marai', label: 'Masato Marai', dates: 'b.1956', era: '1980s', x: 100, y: 700 },
+  { id: 'norio_sugiura', label: 'Norio Sugiura', dates: 'b.1942', role: 'Photographer', era: '1980s', x: 950, y: 900 },
+  { id: 'haruki_yukimura', label: 'Haruki Yukimura', dates: '1948-2016', era: '1980s', x: 300, y: 700 },
+  { id: 'jouen', label: 'Jouen (Minomura Kou)', date: '1989', type: 'work', category: 'Video/Book', x: 800, y: 850 },
+
+  // --- 1990s ---
+  { id: 'takumi_miura', label: 'Takumi Miura', dates: '1967-2021', era: '1990s', x: 400, y: 800 },
+  { id: 'baku_yu_kai', label: 'Baku Yu Kai', date: '1996', type: 'place', era: '1990s', x: 500, y: 800 },
+  { id: 'denki_akechi', label: 'Denki Akechi', dates: '1940-2005', era: '1990s', x: 600, y: 800 },
+  { id: 'saikatsu', label: 'Saikatsu', dates: '1940-2024', era: '1990s', x: 700, y: 800 },
+  
+  { id: 'naka_akira', label: 'Naka Akira', dates: 'b.1959', era: '1990s', x: 400, y: 900 },
+  { id: 'shigonawa_bingo', label: 'Shigonawa Bingo', dates: 'b.1963', era: '1990s', x: 300, y: 900 },
+  { id: 'go_arisue', label: 'Go Arisue', dates: 'b.1954', era: '1990s', x: 200, y: 800 },
+  { id: 'mai_randa', label: 'Mai Randa', dates: '1959-2022', era: '1990s', x: 150, y: 900 },
+  { id: 'yoi_yoshida', label: 'Yoi Yoshida', role: 'Manga books', era: '1990s', x: 250, y: 900 },
+  { id: 'ranki_kazami', label: 'Ranki Kazami', dates: 'b.1962', role: 'Manuals', era: '1990s', x: 150, y: 1000 },
+
+  // --- 2000s / Current ---
+  { id: 'ren_yagami', label: 'Ren Yagami', dates: 'b.1984', era: '2000s', x: 700, y: 1000 },
+  { id: 'tenma_haru', label: 'Tenma Haru', dates: 'b.1975', era: '2000s', x: 750, y: 1100 },
+  { id: 'akechi_kanna', label: 'Akechi Kanna', dates: 'b.1972', era: '2000s', x: 600, y: 950 },
+  { id: 'hajime_kinoko', label: 'Hajime Kinoko', dates: 'b.1977', era: '2000s', x: 650, y: 1050 },
+  { id: 'kasumi_hourai', label: 'Kasumi Hourai', dates: 'b.1980', era: '2000s', x: 600, y: 1150 },
+  { id: 'riccardo_wildties', label: 'Riccardo Wildties', dates: 'b.1976', role: 'Ichiban Deshi', era: '2000s', x: 450, y: 1050 },
+  { id: 'naoko', label: 'Naoko', role: 'Deshi', era: '2000s', x: 350, y: 1050 },
+  { id: 'student_ody', label: 'Student Odyu', dates: 'b.1983', era: '2000s', x: 500, y: 1200 }, // Not in edges but in nodes
+  
+  { id: 'osada_steve', label: 'Osada Steve', dates: 'b.?', era: '2000s', x: 100, y: 800 },
+  { id: 'osada_kazumi', label: 'Osada Kazumi', dates: 'b.?', era: '2000s', x: 0, y: 800 },
+  
+  { id: 'bar_mitsu', label: 'Bar Mitsu', type: 'place', era: '2000s', x: 400, y: 1150 },
+  { id: 'bar_ubu', label: 'Bar UBU', type: 'place', era: '2000s', x: 300, y: 1150 },
+  { id: 'six_studio', label: 'Six studio', type: 'place', era: '2000s', x: 100, y: 900 }
+];
+
+export const INITIAL_KINBAKUSHI_EDGES: KinbakushiEdge[] = [
+  // Roots
+  { source: 'hojojutsu', target: 'tsukioka_yoshitoshi', type: 'important_influence' },
+  { source: 'ukiyo_e', target: 'tsukioka_yoshitoshi', type: 'important_influence' },
+  { source: 'tsukioka_yoshitoshi', target: 'lonely_house', type: 'work_published' },
+  { source: 'tsukioka_yoshitoshi', target: 'seiu_itou', type: 'important_influence' },
+  { source: 'edo_torture', target: 'seiu_itou', type: 'important_influence' },
+  
+  // Founders
+  { source: 'seiu_itou', target: 'seiu_suspension', type: 'work_published' },
+  { source: 'seiu_itou', target: 'nawa_yumio', type: 'direct_relationship' },
+  { source: 'seiu_itou', target: 'toshiyuki_suma', type: 'direct_relationship' },
+  { source: 'toshiyuki_suma', target: 'ten_positions', type: 'work_published' },
+  { source: 'toshiyuki_suma', target: 'kitan_club', type: 'work_published' },
+  
+  // Kitan Club Nexus
+  { source: 'eizo_chiba', target: 'kitan_club', type: 'work_published' },
+  { source: 'takashi_tsujimura', target: 'kitan_club', type: 'work_published' },
+  { source: 'nawa_yumio', target: 'kitan_club', type: 'work_published' },
+  
+  // Oniroku & Media
+  { source: 'nawa_yumio', target: 'oniroku_dan', type: 'direct_relationship' },
+  { source: 'oniroku_dan', target: 'uramado', type: 'direct_relationship' },
+  { source: 'oniroku_dan', target: 'chimuo_nureki', type: 'direct_relationship' },
+  { source: 'oniroku_dan', target: 'oni_pro', type: 'work_published' },
+  { source: 'oniroku_dan', target: 'hana_to_hebi', type: 'work_published' },
+  { source: 'oniroku_dan', target: 'pink_films', type: 'work_published' },
+  { source: 'oniroku_dan', target: 'sm_sniper', type: 'work_published' },
+  { source: 'hiroshi_urado', target: 'oni_pro', type: 'direct_relationship' },
+  
+  // Main Lineage Continued
+  { source: 'chimuo_nureki', target: 'sakurada_denjiro', type: 'direct_relationship' },
+  { source: 'sakurada_denjiro', target: 'theatre_poo', type: 'work_published' },
+  { source: 'sakurada_denjiro', target: 'kinbiken', type: 'work_published' },
+  
+  // Kinbiken / Naka Lineage
+  { source: 'kinbiken', target: 'naka_akira', type: 'direct_relationship' },
+  { source: 'naka_akira', target: 'riccardo_wildties', type: 'direct_relationship', label: 'Ichiban Deshi' },
+  { source: 'naka_akira', target: 'naoko', type: 'direct_relationship', label: 'Deshi' },
+  { source: 'naka_akira', target: 'bar_mitsu', type: 'work_published' },
+  { source: 'naka_akira', target: 'shigonawa_bingo', type: 'direct_relationship' },
+  { source: 'shigonawa_bingo', target: 'bar_ubu', type: 'work_published' },
+  
+  // Arisue Branch
+  { source: 'go_arisue', target: 'yoi_yoshida', type: 'direct_relationship' },
+  { source: 'go_arisue', target: 'mai_randa', type: 'direct_relationship' },
+  { source: 'mai_randa', target: 'ranki_kazami', type: 'direct_relationship' },
+  
+  // Osada Branch
+  { source: 'eikichi_osada', target: 'sm_sniper', type: 'work_published' },
+  { source: 'eikichi_osada', target: 'osada_kazumi', type: 'direct_relationship' },
+  { source: 'eikichi_osada', target: 'osada_steve', type: 'direct_relationship' },
+  { source: 'osada_steve', target: 'six_studio', type: 'work_published' },
+  
+  // S&M Sniper Contributors
+  { source: 'hayakawa_yoshikazu', target: 'sm_sniper', type: 'work_published' },
+  { source: 'masato_marai', target: 'sm_sniper', type: 'work_published' },
+  { source: 'haruki_yukimura', target: 'sm_sniper', type: 'work_published' },
+  
+  // Others
+  { source: 'norio_sugiura', target: 'jouen', type: 'work_published' },
+  { source: 'takumi_miura', target: 'baku_yu_kai', type: 'work_published' },
+  
+  // Akechi Lineage
+  { source: 'denki_akechi', target: 'baku_yu_kai', type: 'work_published' },
+  { source: 'denki_akechi', target: 'akechi_kanna', type: 'direct_relationship' },
+  { source: 'akechi_kanna', target: 'ren_yagami', type: 'direct_relationship' },
+  { source: 'akechi_kanna', target: 'hajime_kinoko', type: 'direct_relationship' },
+  
+  // Kinoko Lineage
+  { source: 'hajime_kinoko', target: 'kasumi_hourai', type: 'direct_relationship' },
+  { source: 'hajime_kinoko', target: 'tenma_haru', type: 'direct_relationship' },
+  { source: 'hajime_kinoko', target: 'ren_yagami', type: 'direct_relationship' }, // Shared student
+  { source: 'ren_yagami', target: 'tenma_haru', type: 'direct_relationship' }
 ];
