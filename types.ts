@@ -236,6 +236,12 @@ export interface MetricRule {
   max?: number; // For range
 }
 
+export interface SocialResource {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export interface AppSettings {
   id?: number;
   gtm_id?: string;
@@ -248,6 +254,9 @@ export interface AppSettings {
   emailjs_service_id?: string;
   emailjs_template_id?: string;
   emailjs_public_key?: string;
+
+  // Resources Config
+  social_resources?: SocialResource[];
 }
 
 // --- Kinbakushi Types ---

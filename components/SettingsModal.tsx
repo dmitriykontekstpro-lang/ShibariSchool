@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Save, Video, Type, RefreshCw, Link, PenTool, Users, CheckCircle, XCircle, ChevronDown, Loader2, BarChart, Code, Activity, Eye, Monitor, ShoppingBag, ClipboardList, Package, Calendar, DollarSign, ArrowLeft, GraduationCap, Mail, AlertTriangle, Copy, List, Globe, ShoppingCart, FolderOpen, Scroll } from 'lucide-react';
-import { DictionaryEntry, Lesson, Article, UserProfile, AppSettings, MetricRule, MetricType, Product, Course, CatalogCategory, CatalogVideo, HistoryEvent, AppEvent } from '../types';
+import { X, Plus, Trash2, Save, Video, Type, RefreshCw, Link, PenTool, Users, CheckCircle, XCircle, ChevronDown, Loader2, BarChart, Code, Activity, Eye, Monitor, ShoppingBag, ClipboardList, Package, Calendar, DollarSign, ArrowLeft, GraduationCap, Mail, AlertTriangle, Copy, List, Globe, ShoppingCart, FolderOpen, Scroll, Share2 } from 'lucide-react';
+import { DictionaryEntry, Lesson, Article, UserProfile, AppSettings, MetricRule, MetricType, Product, Course, CatalogCategory, CatalogVideo, HistoryEvent, AppEvent, SocialResource } from '../types';
 import ArticleConstructor from './ArticleConstructor';
 import MarketplaceManager from './MarketplaceManager';
 import CourseManager from './CourseManager';
@@ -10,7 +10,7 @@ import HistoryManager from './HistoryManager';
 import EventsManager from './EventsManager';
 import { supabase } from '../supabaseClient';
 import BehaviorTracker, { AdvancedSessionMetrics } from '../utils/BehaviorTracker';
-import { DEFAULT_EMAILJS_PUBLIC_KEY, DEFAULT_EMAILJS_SERVICE_ID, DEFAULT_EMAILJS_TEMPLATE_ID } from '../constants';
+import { DEFAULT_EMAILJS_PUBLIC_KEY, DEFAULT_EMAILJS_SERVICE_ID, DEFAULT_EMAILJS_TEMPLATE_ID, INITIAL_SOCIAL_RESOURCES } from '../constants';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -93,7 +93,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateLesson, onAddLesson, onRemoveLesson, 
   onAddWord, onRemoveWord, onResetToDefaults, onArticlesRefresh
 }) => {
-  const [activeTab, setActiveTab] = useState<'video' | 'dict' | 'constructor' | 'users' | 'analytics' | 'behavior' | 'marketplace' | 'courses' | 'catalog' | 'history' | 'events'>('video');
+  const [activeTab, setActiveTab] = useState<'video' | 'dict' | 'constructor' | 'users' | 'analytics' | 'behavior' | 'marketplace' | 'courses' | 'catalog' | 'history' | 'events' | 'resources'>('video');
   const [newTerm, setNewTerm] = useState('');
   const [newDef, setNewDef] = useState('');
 
@@ -104,7 +104,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isColumnSelectorOpen, setIsColumnSelectorOpen] = useState(false);
   const [viewingHistoryUser, setViewingHistoryUser] = useState<UserProfile | null>(null);
 
-  // Analytics & Behavior State
+  // Analytics & Behavior & Resources State
   const [appSettings, setAppSettings] = useState<AppSettings>({ 
       gtm_id: '', 
       yandex_id: '', 
@@ -113,7 +113,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       gold_config: [],
       emailjs_service_id: DEFAULT_EMAILJS_SERVICE_ID,
       emailjs_template_id: DEFAULT_EMAILJS_TEMPLATE_ID,
-      emailjs_public_key: DEFAULT_EMAILJS_PUBLIC_KEY
+      emailjs_public_key: DEFAULT_EMAILJS_PUBLIC_KEY,
+      social_resources: INITIAL_SOCIAL_RESOURCES
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -247,7 +248,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
         if (activeTab === 'users') fetchUsers();
-        if (activeTab === 'analytics' || activeTab === 'behavior') {
+        if (activeTab === 'analytics' || activeTab === 'behavior' || activeTab === 'resources') {
             fetchSettings();
             if (activeTab === 'behavior') fetchSelectOptions();
         }
@@ -305,7 +306,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   emailjs_public_key: data.emailjs_public_key || DEFAULT_EMAILJS_PUBLIC_KEY,
                   emailjs_service_id: data.emailjs_service_id || DEFAULT_EMAILJS_SERVICE_ID,
                   emailjs_template_id: data.emailjs_template_id || DEFAULT_EMAILJS_TEMPLATE_ID,
-                  gold_config: Array.isArray(data.gold_config) ? data.gold_config : []
+                  gold_config: Array.isArray(data.gold_config) ? data.gold_config : [],
+                  social_resources: Array.isArray(data.social_resources) && data.social_resources.length > 0 ? data.social_resources : INITIAL_SOCIAL_RESOURCES
               });
           }
       } catch (e: any) {
@@ -401,7 +403,8 @@ create table if not exists public.app_settings (
   gold_config jsonb default '[]'::jsonb,
   emailjs_service_id text,
   emailjs_template_id text,
-  emailjs_public_key text
+  emailjs_public_key text,
+  social_resources jsonb default '[]'::jsonb
 );
 alter table public.app_settings enable row level security;
 do $$ begin
@@ -409,14 +412,19 @@ do $$ begin
     create policy "Allow all operations" on public.app_settings for all using (true) with check (true);
   end if;
 end $$;
-insert into public.app_settings (id, emailjs_public_key, emailjs_service_id, emailjs_template_id)
-values (1, '${DEFAULT_EMAILJS_PUBLIC_KEY}', '${DEFAULT_EMAILJS_SERVICE_ID}', '${DEFAULT_EMAILJS_TEMPLATE_ID}')
-on conflict (id) do update
-set emailjs_public_key = EXCLUDED.emailjs_public_key,
-    emailjs_service_id = EXCLUDED.emailjs_service_id,
-    emailjs_template_id = EXCLUDED.emailjs_template_id
-where app_settings.emailjs_public_key is null;
+-- Fallback Insert
+insert into public.app_settings (id) values (1) on conflict (id) do nothing;
+-- Add column if missing
+alter table public.app_settings add column if not exists social_resources jsonb default '[]'::jsonb;
   `.trim();
+
+  // Helper for resource update
+  const updateResourceUrl = (id: string, url: string) => {
+      setAppSettings(prev => ({
+          ...prev,
+          social_resources: prev.social_resources?.map(r => r.id === id ? { ...r, url } : r)
+      }));
+  };
 
   const addRule = (def: MetricDefinition) => {
       const newRule: MetricRule = {
@@ -473,6 +481,7 @@ where app_settings.emailjs_public_key is null;
       { id: 'events', label: 'Афиша', icon: Calendar },
       { id: 'history', label: 'История', icon: Scroll },
       { id: 'marketplace', label: 'Магазин', icon: ShoppingBag },
+      { id: 'resources', label: 'Ресурсы', icon: Share2 },
       { id: 'dict', label: 'Словарь', icon: Type },
       { id: 'constructor', label: 'Конструктор', icon: PenTool },
       { id: 'users', label: 'CRM', icon: Users },
@@ -481,8 +490,8 @@ where app_settings.emailjs_public_key is null;
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-neutral-900 w-full h-full md:h-[90vh] md:max-w-7xl md:rounded-2xl flex flex-col shadow-2xl overflow-hidden border-none md:border border-neutral-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black animate-in fade-in duration-200">
+      <div className="bg-neutral-900 w-full h-full flex flex-col shadow-2xl overflow-hidden border-none">
         <div className="flex justify-between items-center p-4 md:p-6 border-b border-neutral-800 shrink-0 bg-neutral-900">
           <h2 className="text-xl md:text-2xl font-bold text-white">Настройки приложения</h2>
           <button onClick={onClose} className="p-2 hover:bg-neutral-800 rounded-full transition-colors">
@@ -581,6 +590,41 @@ where app_settings.emailjs_public_key is null;
             {activeTab === 'history' && <HistoryManager events={historyEvents} onSave={() => { onArticlesRefresh(); }} />}
 
             {activeTab === 'marketplace' && <MarketplaceManager products={products} onSave={() => { fetchProducts(); onArticlesRefresh(); }} />}
+
+            {/* Resources Editor Tab */}
+            {activeTab === 'resources' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2"><Share2 className="w-5 h-5 text-red-500"/> Ресурсы и Соцсети</h3>
+                            <p className="text-sm text-neutral-400">Настройте ссылки для вкладки "Ресурсы".</p>
+                        </div>
+                        <button onClick={handleSaveSettings} disabled={isSavingSettings} className="bg-red-700 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all disabled:opacity-50">
+                            {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4" />} Сохранить
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(appSettings.social_resources || INITIAL_SOCIAL_RESOURCES).map((res) => (
+                            <div key={res.id} className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl space-y-2">
+                                <label className="text-xs font-bold text-neutral-500 uppercase flex justify-between">
+                                    {res.label}
+                                    <span className="text-[10px] text-neutral-600 font-mono">{res.id}</span>
+                                </label>
+                                <div className="flex items-center gap-2 bg-neutral-800 rounded-lg px-3 py-2 border border-neutral-700">
+                                    <Link className="w-4 h-4 text-neutral-500" />
+                                    <input 
+                                        value={res.url} 
+                                        onChange={(e) => updateResourceUrl(res.id, e.target.value)}
+                                        className="flex-1 bg-transparent text-sm text-white outline-none"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* ... Other Tabs ... */}
             {activeTab === 'dict' && (

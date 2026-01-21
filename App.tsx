@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings, HelpCircle, Loader2, Menu, X, Book, FileText, ArrowRight, LogOut, User as UserIcon, ShoppingBag, Lock, Globe, GraduationCap, FolderOpen, Scroll, Network, Calendar } from 'lucide-react';
-import { INITIAL_LESSONS, INITIAL_DICTIONARY, INITIAL_ARTICLES, INITIAL_PRODUCTS, INITIAL_COURSES, UI_TRANSLATIONS, INITIAL_CATALOG_CATEGORIES, INITIAL_CATALOG_VIDEOS, INITIAL_HISTORY, INITIAL_EVENTS } from './constants';
-import { Lesson, DictionaryEntry, Article, UserProfile, Product, CartItem, Course, CatalogCategory, CatalogVideo, HistoryEvent, AppEvent } from './types';
+import { Settings, HelpCircle, Loader2, Menu, X, Book, FileText, ArrowRight, LogOut, User as UserIcon, ShoppingBag, Lock, Globe, GraduationCap, FolderOpen, Scroll, Network, Calendar, Anchor, Share2 } from 'lucide-react';
+import { INITIAL_LESSONS, INITIAL_DICTIONARY, INITIAL_ARTICLES, INITIAL_PRODUCTS, INITIAL_COURSES, UI_TRANSLATIONS, INITIAL_CATALOG_CATEGORIES, INITIAL_CATALOG_VIDEOS, INITIAL_HISTORY, INITIAL_EVENTS, INITIAL_SOCIAL_RESOURCES } from './constants';
+import { Lesson, DictionaryEntry, Article, UserProfile, Product, CartItem, Course, CatalogCategory, CatalogVideo, HistoryEvent, AppEvent, SocialResource } from './types';
 import VideoPlayer from './components/VideoPlayer';
 import TextContent from './components/TextContent';
 import SettingsModal from './components/SettingsModal';
@@ -16,6 +16,8 @@ import CatalogModal from './components/CatalogModal';
 import HistoryModal from './components/HistoryModal';
 import KinbakushiModal from './components/KinbakushiModal';
 import EventsModal from './components/EventsModal';
+import NavazuModal from './components/NavazuModal';
+import ResourcesModal from './components/ResourcesModal';
 import CartDrawer from './components/CartDrawer';
 import AuthOverlay from './components/AuthOverlay';
 import BehaviorTracker from './utils/BehaviorTracker';
@@ -60,6 +62,7 @@ const App: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
+  const [socialResources, setSocialResources] = useState<SocialResource[]>(INITIAL_SOCIAL_RESOURCES);
   
   // Catalog Data State
   const [catalogVideos, setCatalogVideos] = useState<CatalogVideo[]>(INITIAL_CATALOG_VIDEOS);
@@ -85,6 +88,8 @@ const App: React.FC = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isKinbakushiOpen, setIsKinbakushiOpen] = useState(false);
   const [isEventsOpen, setIsEventsOpen] = useState(false);
+  const [isNavazuOpen, setIsNavazuOpen] = useState(false);
+  const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); 
@@ -138,7 +143,7 @@ const App: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (!supabase) return;
     try {
-      const [lessonsResult, dictResult, articlesResult, productsResult, coursesResult, catVidResult, catCatResult, historyResult, eventsResult] = await Promise.allSettled([
+      const [lessonsResult, dictResult, articlesResult, productsResult, coursesResult, catVidResult, catCatResult, historyResult, eventsResult, settingsResult] = await Promise.allSettled([
           supabase.from('lessons').select('*').order('id', { ascending: true }),
           supabase.from('dictionary').select('*').order('term', { ascending: true }),
           supabase.from('letter_shibari').select('*').order('id', { ascending: true }),
@@ -147,7 +152,8 @@ const App: React.FC = () => {
           supabase.from('catalog_videos_shibari').select('*').order('id', { ascending: true }),
           supabase.from('catalog_categories_shibari').select('*').order('id', { ascending: true }),
           supabase.from('history_shibari').select('*'),
-          supabase.from('event_shibari').select('*').order('date', { ascending: true })
+          supabase.from('event_shibari').select('*').order('date', { ascending: true }),
+          supabase.from('app_settings').select('*').limit(1).maybeSingle()
       ]);
 
       if (articlesResult.status === 'fulfilled' && articlesResult.value.data) {
@@ -198,6 +204,12 @@ const App: React.FC = () => {
       
       if (eventsResult.status === 'fulfilled' && eventsResult.value.data) {
           setEvents(eventsResult.value.data);
+      }
+
+      if (settingsResult.status === 'fulfilled' && settingsResult.value.data) {
+          if (Array.isArray(settingsResult.value.data.social_resources)) {
+              setSocialResources(settingsResult.value.data.social_resources);
+          }
       }
 
     } catch (error) { console.error("Silent fetch error:", error); }
@@ -277,6 +289,16 @@ const App: React.FC = () => {
   const handleOpenEvents = () => {
       setIsEventsOpen(true);
       BehaviorTracker.trackPageView('/events');
+  };
+
+  const handleOpenNavazu = () => {
+      setIsNavazuOpen(true);
+      BehaviorTracker.trackPageView('/navazu');
+  };
+
+  const handleOpenResources = () => {
+      setIsResourcesOpen(true);
+      BehaviorTracker.trackPageView('/resources');
   };
 
   // --- Derived Data ---
@@ -411,11 +433,13 @@ const App: React.FC = () => {
                         <button onClick={() => setIsArticlesOpen(true)} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.articles}</button>
                         <button onClick={handleOpenDictionary} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.dictionary}</button>
                         <button onClick={handleOpenEvents} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.events || "Афиша"}</button>
+                        <button onClick={handleOpenNavazu} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.navazu || "Навадзу"}</button>
                         <button onClick={handleOpenMarketplace} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.shop}</button>
                         <button onClick={handleOpenCourses} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.courses}</button>
                         <button onClick={handleOpenCatalog} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.catalog || "Каталог"}</button>
                         <button onClick={handleOpenHistory} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.history || "История"}</button>
                         <button onClick={handleOpenKinbakushi} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.kinbakushi || "Мастера"}</button>
+                        <button onClick={handleOpenResources} className="flex-1 text-center text-neutral-400 hover:text-white hover:bg-neutral-900 py-3 rounded-t-md transition-all text-[10px] md:text-xs font-bold uppercase tracking-tight border-b-2 border-transparent hover:border-red-600/50 px-1 truncate">{t.resources || "Ресурсы"}</button>
                     </div>
 
                     {/* Lesson Header */}
@@ -495,9 +519,21 @@ const App: React.FC = () => {
         lang={lang}
         t={t}
       />
+      <NavazuModal
+        isOpen={isNavazuOpen}
+        onClose={() => setIsNavazuOpen(false)}
+        lang={lang}
+      />
       <KinbakushiModal
         isOpen={isKinbakushiOpen}
         onClose={() => setIsKinbakushiOpen(false)}
+        lang={lang}
+        t={t}
+      />
+      <ResourcesModal
+        isOpen={isResourcesOpen}
+        onClose={() => setIsResourcesOpen(false)}
+        resources={socialResources}
         lang={lang}
         t={t}
       />

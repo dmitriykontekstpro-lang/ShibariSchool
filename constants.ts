@@ -1,5 +1,5 @@
 
-import { Lesson, DictionaryEntry, Article, Product, Course, CatalogCategory, CatalogVideo, HistoryEvent, KinbakushiNode, KinbakushiEdge, AppEvent } from './types';
+import { Lesson, DictionaryEntry, Article, Product, Course, CatalogCategory, CatalogVideo, HistoryEvent, KinbakushiNode, KinbakushiEdge, AppEvent, SocialResource } from './types';
 
 // EmailJS Default Configuration (Used for initialization)
 export const DEFAULT_EMAILJS_PUBLIC_KEY = 'o38PgmQCq4yaVRdhP';
@@ -63,9 +63,11 @@ export const UI_TRANSLATIONS = {
     cart: "Корзина",
     articles: "Статьи",
     dictionary: "Словарь",
-    navazu: "Навадзу", // Legacy fallback
+    navazu: "Навадзу", 
     events: "Афиша",
     events_subtitle: "Мероприятия и Воркшопы",
+    resources: "Ресурсы",
+    resources_subtitle: "Наши соцсети и партнеры",
     login: "Войти",
     logout: "Выйти",
     register: "Регистрация",
@@ -123,9 +125,11 @@ export const UI_TRANSLATIONS = {
     cart: "Cart",
     articles: "Articles",
     dictionary: "Glossary",
-    navazu: "Nawazu", // Legacy fallback
+    navazu: "Nawazu", 
     events: "Events",
     events_subtitle: "Workshops & Meetings",
+    resources: "Resources",
+    resources_subtitle: "Our Socials & Partners",
     login: "Sign In",
     logout: "Sign Out",
     register: "Sign Up",
@@ -168,6 +172,54 @@ export const UI_TRANSLATIONS = {
     event_price: "Price",
     register_event: "Register"
   }
+};
+
+export const INITIAL_SOCIAL_RESOURCES: SocialResource[] = [
+    { id: 'youtube', label: 'YouTube', url: 'https://youtube.com' },
+    { id: 'instagram', label: 'Instagram', url: 'https://instagram.com' },
+    { id: 'facebook', label: 'Facebook', url: 'https://facebook.com' },
+    { id: 'twitter', label: 'X (Twitter)', url: 'https://twitter.com' },
+    { id: 'spotify', label: 'Spotify', url: 'https://spotify.com' },
+    { id: 'telegram_channel', label: 'Telegram Channel', url: 'https://t.me/' },
+    { id: 'telegram_bot', label: 'Telegram Bot', url: 'https://t.me/bot' },
+    { id: 'vk', label: 'VK.com', url: 'https://vk.com' },
+    { id: 'tiktok', label: 'TikTok', url: 'https://tiktok.com' },
+    { id: 'appstore', label: 'AppStore', url: 'https://apple.com/app-store/' },
+    { id: 'googleplay', label: 'Google Play', url: 'https://play.google.com' },
+    { id: 'vimeo', label: 'Vimeo', url: 'https://vimeo.com' }
+];
+
+export const NAVAZU_CONTENT = {
+    school_name: "Школа Навадзу",
+    school_description: `Школа Навадзу — это пространство, где древние традиции Кинбаку соединяются с современной анатомией и психологией. Мы учим не просто вязать узлы, а чувствовать партнера, создавая эстетически совершенные и безопасные формы.
+
+Наша программа включает более 100 часов практики, углубленное изучение анатомии нервной системы и психологии взаимодействия. Мы уделяем первостепенное внимание травмобезопасности и этике.
+
+Здесь вы пройдете путь от первых веревок до сложных подвесов, став частью сообщества, где ценят осознанность, доверие и искусство.`,
+    
+    levels: [
+        { level: 1, title: "Shokyu (Начальный)", desc: "Основы безопасности, узлы одной и двух веревок, коммуникация." },
+        { level: 2, title: "Chukyu (Средний)", desc: "Статичные фигуры на полу, работа с натяжением, эстетика линий." },
+        { level: 3, title: "Jokyu (Продвинутый)", desc: "Введение в частичные подвесы, динамика, управление весом." },
+        { level: 4, title: "Semushi (Эксперт)", desc: "Полные подвесы, сложные геометрические формы, импровизация." },
+        { level: 5, title: "Shihan (Мастер)", desc: "Психология воздействия, авторский стиль, преподавание." },
+        { level: 6, title: "Soke (Грандмастер)", desc: "Хранитель традиции, создание новых форм, духовный аспект." },
+    ],
+
+    master: {
+        name: "Мастер Кендзиро",
+        bio: "Мастер Кендзиро практикует искусство Кинбаку более 25 лет. Обучался в Киото у прямых наследников линии Ито Сейу. Автор методики 'Живая Веревка', объединяющей традиционное связывание с соматической терапией. Его подход отличается мягкостью исполнения при жесткой фиксации, создавая уникальный опыт для модели.",
+        image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=800"
+    },
+
+    locations: [
+        { city: "Москва", address: "ул. Правды 24, стр. 3, Лофт 'Узел'" },
+        { city: "Санкт-Петербург", address: "Лиговский пр. 74, Этажи" },
+        { city: "Екатеринбург", address: "ул. Малышева 51, БЦ Высоцкий" },
+        { city: "Новосибирск", address: "Красный проспект 17" }
+    ],
+
+    process: "Процесс сертификации состоит из трех этапов: теоретический экзамен (анатомия и безопасность), демонстрация технических навыков (выполнение ката) и творческая работа (фри-стайл сессия). Оценка проводится коллегией из трех мастеров высшего уровня. Успешная сдача гарантирует внесение в международный реестр Навадзу."
 };
 
 export const INITIAL_DICTIONARY: DictionaryEntry[] = [
